@@ -1,7 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"sync"
+
+	"github.com/bicosteve/booking-system/pkg/controllers"
+)
 
 func main() {
-	fmt.Println("First init")
+
+	var wg sync.WaitGroup
+	var base controllers.Base
+
+	base.Init()
+
+	wg.Add(1)
+	go base.AuthAPI(&wg)
+
+	wg.Wait()
+
 }
