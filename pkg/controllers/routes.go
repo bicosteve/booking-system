@@ -14,6 +14,7 @@ func (b *Base) Router() http.Handler {
 	utils.SetCors(router)
 
 	router.Post("/api/auth/register", b.Register)
+	router.Post("/api/auth/login", b.Login)
 
 	return router
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/bicosteve/booking-system/pkg/entities"
@@ -14,6 +15,7 @@ import (
 
 var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 var errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 var MessageLogs = &entities.Message{
 	InfoLog:  infoLog,
@@ -92,6 +94,10 @@ func ValidateUser(data *entities.UserPayload) error {
 		return errors.New("email is required")
 	}
 
+	if !emailRegex.MatchString(data.Email) {
+		return errors.New("valid email needed")
+	}
+
 	if data.PhoneNumber == "" {
 		return errors.New("phone number is required")
 	}
@@ -106,6 +112,23 @@ func ValidateUser(data *entities.UserPayload) error {
 
 	if strings.Compare(data.Password, data.ConfirmPassword) != 0 {
 		return errors.New("password and confirm password is must match")
+	}
+
+	return nil
+}
+
+func ValidateLogin(data *entities.UserPayload) error {
+
+	if data.Email == "" {
+		return errors.New("email is required")
+	}
+
+	if !emailRegex.MatchString(data.Email) {
+		return errors.New("valid email needed")
+	}
+
+	if data.Password == "" {
+		return errors.New("password is required")
 	}
 
 	return nil
