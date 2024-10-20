@@ -2,10 +2,33 @@ package controllers
 
 import (
 	"net/http"
+
+	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 )
 
 func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
-	payload := "This is payload"
-	w.Write([]byte(payload))
-	//fmt.Println(payload)
+	var payload = new(entities.UserPayload)
+
+	err := utils.SerializeJSON(w, r, payload)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		utils.MessageLogs.ErrorLog.Println(err)
+		return
+	}
+
+	err = utils.ValidateUser(payload)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		utils.MessageLogs.ErrorLog.Println(err)
+		return
+	}
+
+	err = utils.DeserializeJSON(w, http.StatusOK, payload)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		utils.MessageLogs.ErrorLog.Println(err)
+		return
+	}
+
 }

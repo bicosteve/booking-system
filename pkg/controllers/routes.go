@@ -13,7 +13,7 @@ func (b *Base) Router() http.Handler {
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
 
-	router.Get("/ping", b.Register)
+	router.Post("/api/auth/register", b.Register)
 
 	return router
 
