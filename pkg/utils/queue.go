@@ -52,3 +52,16 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 
 	return nil
 }
+
+func BrokerConnect(brokerString string) (*kafka.Producer, error) {
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": brokerString,
+		"acks":              "all",
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
