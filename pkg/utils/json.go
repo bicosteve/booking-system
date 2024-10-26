@@ -43,7 +43,7 @@ func SerializeJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return nil
 }
 
-// Deserialize the outgoing data from server
+// Deserialize the outgoing data from server to json format
 func DeserializeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 
 	out, err := json.MarshalIndent(data, "", "\t")
@@ -60,7 +60,6 @@ func DeserializeJSON(w http.ResponseWriter, status int, data any, headers ...htt
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
 	_, err = w.Write(out)
 	if err != nil {
 		return err

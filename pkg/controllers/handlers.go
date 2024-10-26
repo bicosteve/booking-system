@@ -24,7 +24,14 @@ func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = utils.DeserializeJSON(w, http.StatusOK, payload)
+	err = utils.SendMessageToKafka("localhost:19092", "bkgstmregister", "register", payload)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		utils.MessageLogs.ErrorLog.Println(err)
+		return
+	}
+
+	err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"msg": "success"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		utils.MessageLogs.ErrorLog.Println(err)
