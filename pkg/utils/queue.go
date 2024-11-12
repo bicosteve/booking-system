@@ -60,8 +60,28 @@ func BrokerConnect(brokerString string) (*kafka.Producer, error) {
 	})
 
 	if err != nil {
+		MessageLogs.ErrorLog.Printf("BROKER ERROR: Could not connect broker becasue:  %v\n", err)
 		return nil, err
 	}
 
+	MessageLogs.InfoLog.Println("Broker connected successfully")
+
 	return p, nil
+}
+
+func ConsumerConnect(broker string) (*kafka.Consumer, error) {
+	c, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": broker,
+		"group.id":          "kafka-go-getting-started",
+		"auto.offset.reset": "earliest",
+	})
+
+	if err != nil {
+		MessageLogs.ErrorLog.Printf("CONSUMER ERROR: Could not create consumer because: %v\n", err)
+		return nil, err
+	}
+
+	MessageLogs.InfoLog.Println("CONSUMER INFO: connected to broker")
+
+	return c, nil
 }

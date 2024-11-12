@@ -13,8 +13,9 @@ func main() {
 
 	base.Init()
 
-	wg.Add(1)
+	wg.Add(2)
 	go base.AuthAPI(&wg)
+	go base.AuthConsumer(&wg)
 
 	wg.Wait()
 

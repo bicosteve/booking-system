@@ -24,7 +24,14 @@ func (b *Base) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = utils.SendMessageToKafka("localhost:19092", "bkgstmregister", "register", payload)
+	err = utils.CreateUser(*payload, b.Cache)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		utils.MessageLogs.ErrorLog.Println(err)
+		return
+	}
+
+	err = utils.SendMessageToKafka(b.Broker, b.Topic, b.Key, payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		utils.MessageLogs.ErrorLog.Println(err)
