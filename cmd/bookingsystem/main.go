@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	"github.com/bicosteve/booking-system/pkg/controllers"
+	"github.com/bicosteve/booking-system/internal/controllers"
 )
 
 func main() {

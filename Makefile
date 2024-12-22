@@ -1,2 +1,2 @@
 auth:
-	go run main.go
+	go run ./cmd/bookingsystem/main.go

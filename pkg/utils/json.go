@@ -4,23 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/bicosteve/booking-system/pkg/entities"
 )
-
-var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-var errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-
-var MessageLogs = &entities.Message{
-	InfoLog:  infoLog,
-	ErrorLog: errorLog,
-}
 
 // Serialize the incoming Json payload
 func SerializeJSON(w http.ResponseWriter, r *http.Request, data any) error {
@@ -93,7 +81,7 @@ func ValidateUser(data *entities.UserPayload) error {
 		return errors.New("email is required")
 	}
 
-	if !emailRegex.MatchString(data.Email) {
+	if !entities.EmailRegex.MatchString(data.Email) {
 		return errors.New("valid email needed")
 	}
 
@@ -122,7 +110,7 @@ func ValidateLogin(data *entities.UserPayload) error {
 		return errors.New("email is required")
 	}
 
-	if !emailRegex.MatchString(data.Email) {
+	if !entities.EmailRegex.MatchString(data.Email) {
 		return errors.New("valid email needed")
 	}
 

@@ -5,15 +5,15 @@ import (
 	"time"
 )
 
-func usernameUniqueKey(userId int64) string {
+func UsernameUniqueKey(userId int64) string {
 	return "username:unique#" + strconv.FormatInt(userId, 10)
 }
 
-func usersKey(userId string) string {
+func UsersKey(userId string) string {
 	return "users#" + userId
 }
 
-func genId() int64 {
+func GenId() int64 {
 	// Used in sorted set to give time value as int ordered
 	date := time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local)
 	milli := date.UnixMilli()
@@ -29,7 +29,7 @@ func genId() int64 {
 
 // }
 
-func convertIdToScore(id int64) float64 {
+func ConvertIdToScore(id int64) float64 {
 	unixSeconds := id / 1000
 	unixNano := (id % 1000) * 1e6
 	t := time.Unix(unixSeconds, unixNano)

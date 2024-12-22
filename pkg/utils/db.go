@@ -20,10 +20,10 @@ func DbConnect(dsn string) (*sql.DB, error) {
 
 	err = db.Ping()
 	if err != nil {
-		MessageLogs.ErrorLog.Printf("%s %s", entities.ErrorDBPing.Error(), err)
+		entities.MessageLogs.ErrorLog.Printf("%s %s", entities.ErrorDBPing.Error(), err)
 		return nil, err
 	}
 
-	MessageLogs.InfoLog.Printf("%s", entities.SuccessDBPing)
+	entities.MessageLogs.InfoLog.Printf("%s", entities.SuccessDBPing)
 	return db, nil
 }

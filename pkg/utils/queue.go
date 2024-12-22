@@ -5,7 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 func SendMessageToKafka(broker, topic, key string, data any) error {
@@ -16,7 +17,7 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 	})
 
 	if err != nil {
-		MessageLogs.ErrorLog.Println(err)
+		entities.MessageLogs.ErrorLog.Println(err)
 		return errors.New(err.Error())
 	}
 
@@ -29,9 +30,9 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					MessageLogs.ErrorLog.Printf("Message deliver because of %v\n ", ev.TopicPartition)
+					entities.MessageLogs.ErrorLog.Printf("Message deliver because of %v\n ", ev.TopicPartition)
 				} else {
-					MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
+					entities.MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
 
 				}
 			}
@@ -60,11 +61,11 @@ func BrokerConnect(brokerString string) (*kafka.Producer, error) {
 	})
 
 	if err != nil {
-		MessageLogs.ErrorLog.Printf("BROKER ERROR: Could not connect broker becasue:  %v\n", err)
+		entities.MessageLogs.ErrorLog.Printf("BROKER ERROR: Could not connect broker becasue:  %v\n", err)
 		return nil, err
 	}
 
-	MessageLogs.InfoLog.Println("Broker connected successfully")
+	entities.MessageLogs.InfoLog.Println("Broker connected successfully")
 
 	return p, nil
 }
@@ -77,11 +78,11 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	})
 
 	if err != nil {
-		MessageLogs.ErrorLog.Printf("CONSUMER ERROR: Could not create consumer because: %v\n", err)
+		entities.MessageLogs.ErrorLog.Printf("CONSUMER ERROR: Could not create consumer because: %v\n", err)
 		return nil, err
 	}
 
-	MessageLogs.InfoLog.Println("CONSUMER INFO: connected to broker")
+	entities.MessageLogs.InfoLog.Println("CONSUMER INFO: connected to broker")
 
 	return c, nil
 }

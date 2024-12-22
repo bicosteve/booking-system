@@ -1,0 +1,59 @@
+[app]
+id = "booking-system.api"
+enable = true
+version = "1.0"
+name = "booking system app"
+developer = ["bico.steve4@gmail.com"]
+
+[logger]
+path = "./logs"
+writer = "both"             #(pass in file, out or both)
+file = "booking-system.log"
+level = "debug"
+handler = "json"
+
+
+# #local mysql 
+[[mysql]]
+name = "mysql"
+host = "127.0.0.1"
+port = 3306
+username = "bico"
+password = "Betika@254"
+schema = "bookings"
+
+
+# # redis configs
+[[redis]]
+name = "redis"
+host = "127.0.0.1"
+password = ""
+port = 6379
+
+[[kafka]]
+authbroker = "localhost:19092"
+authtopic = "bkgstmregister"
+authkey = "register"
+
+
+[[http]]
+name = "main"
+host = "0.0.0.0"
+port = 7001
+path = "/api"
+cors = { allowed_method = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS",
+], allowed_header = [
+    "Accept",
+    "Accept-Language",
+    "Content-Type",
+    "Content-Language",
+    "Origin",
+], allowed_origin = [
+    "*",
+] }
+args = { disableAuth = false }
