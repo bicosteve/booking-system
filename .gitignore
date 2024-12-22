@@ -1,2 +1,2 @@
 .env
-booking_system.toml
+*.toml
