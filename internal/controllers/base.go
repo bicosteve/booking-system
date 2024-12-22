@@ -49,7 +49,7 @@ func (b *Base) Init() {
 	// redisPassword := os.Getenv("REDISPASSWORD")
 	// redisPort := os.Getenv("REDISPORT")
 	// port := os.Getenv("AUTHPORT")
-	// dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 
 	// p, err := utils.BrokerConnect(brokerURL)
 	// if err != nil {

@@ -7,8 +7,6 @@ import (
 	"os"
 	"regexp"
 	"time"
-
-	"github.com/BurntSushi/toml"
 )
 
 type User struct {
@@ -150,24 +148,6 @@ var ErrorInvalidCredentials = errors.New("models: incorrect password or email")
 var ErrorDBConnection = errors.New("db: could not connect db becacuse ")
 var ErrorDBPing = errors.New("db: could not ping db because ")
 var SuccessDBPing = "db: successfully connected to db"
-
-func (c Config) LoadConfigs(file string) (Config, error) {
-	var config Config
-
-	data, err := os.ReadFile(file)
-	if err != nil {
-		MessageLogs.ErrorLog.Fatalf("could not read toml file due to %v ", err)
-
-	}
-
-	_, err = toml.Decode(string(data), &config)
-	if err != nil {
-		MessageLogs.ErrorLog.Fatalf("could not load configs due to %v ", err)
-
-	}
-
-	return config, nil
-}
 
 func (c Config) FindHttpConfig(name string) (http HttpConfig, err error) {
 	for _, config := range c.Http {
