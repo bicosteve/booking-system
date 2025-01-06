@@ -33,13 +33,6 @@ func (b *Base) RegisterHandler(s *service.UserService) http.HandlerFunc {
 			return
 		}
 
-		// err = utils.SendMessageToKafka(b.Broker, b.Topic, b.Key, payload)
-		// if err != nil {
-		// 	utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		// 	entities.MessageLogs.ErrorLog.Println(err)
-		// 	return
-		// }
-
 		err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"msg": "success"})
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusBadRequest)
