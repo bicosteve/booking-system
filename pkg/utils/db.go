@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 	_ "github.com/go-sql-driver/mysql"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -16,7 +16,7 @@ type Redisdb struct {
 
 func NewRedisDB(ctx context.Context, config entities.RedisConfig) (Redisdb, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:         config.Address,
+		Addr:         config.Address + ":" + config.Port,
 		Password:     config.Password,
 		DB:           config.Database,
 		ClientName:   config.Name,
@@ -24,6 +24,13 @@ func NewRedisDB(ctx context.Context, config entities.RedisConfig) (Redisdb, erro
 		PoolTimeout:  time.Second * 5,
 		MinIdleConns: 32,
 	})
+
+	pong, err := client.Ping(ctx).Result()
+	if err != nil {
+		return Redisdb{}, err
+	}
+
+	entities.MessageLogs.InfoLog.Printf("REDIS: %v", pong)
 
 	redis := Redisdb{Client: client, ctx: ctx, Config: config}
 

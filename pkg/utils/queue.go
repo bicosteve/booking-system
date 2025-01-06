@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -54,18 +54,18 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 	return nil
 }
 
-func BrokerConnect(brokerString string) (*kafka.Producer, error) {
+func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": brokerString,
 		"acks":              "all",
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("BROKER ERROR: Could not connect broker becasue:  %v\n", err)
+		entities.MessageLogs.ErrorLog.Printf("PRODUCER: Could not connect to broker becasue:  %v\n", err)
 		return nil, err
 	}
 
-	entities.MessageLogs.InfoLog.Println("Broker connected successfully")
+	entities.MessageLogs.InfoLog.Println("PRODUCER: connected successfully")
 
 	return p, nil
 }
@@ -78,11 +78,11 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("CONSUMER ERROR: Could not create consumer because: %v\n", err)
+		entities.MessageLogs.ErrorLog.Printf("CONSUMER: Could not connect to consumer because: %v\n", err)
 		return nil, err
 	}
 
-	entities.MessageLogs.InfoLog.Println("CONSUMER INFO: connected to broker")
+	entities.MessageLogs.InfoLog.Println("CONSUMER: connected successfully")
 
 	return c, nil
 }

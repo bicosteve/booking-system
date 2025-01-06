@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 )
 
 type Mysqldb struct {
 	Connection *sql.DB
-	ctx        context.Context
+	CTX        context.Context
 	Config     entities.MysqlConfig
 }
 
@@ -27,15 +27,12 @@ func ConnectSQLDB(ctx context.Context, config entities.MysqlConfig) (Mysqldb, er
 	connection.SetConnMaxLifetime(5 * time.Second)
 	connection.SetConnMaxIdleTime(5 * time.Second)
 
-	db := Mysqldb{Connection: connection, ctx: ctx, Config: config}
+	db := &Mysqldb{Connection: connection, CTX: ctx, Config: config}
 
-	go db.close()
+	// defer connection.Close()
 
-	return db, nil
+	entities.MessageLogs.InfoLog.Printf("%s", entities.SuccessDBPing)
 
-}
+	return *db, nil
 
-func (m Mysqldb) close() error {
-	<-m.ctx.Done()
-	return m.Connection.Close()
 }

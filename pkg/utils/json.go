@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 )
 
 // Serialize the incoming Json payload
@@ -87,6 +87,10 @@ func ValidateUser(data *entities.UserPayload) error {
 
 	if data.PhoneNumber == "" {
 		return errors.New("phone number is required")
+	}
+
+	if data.IsVendor == "" {
+		return errors.New("isVendor is required")
 	}
 
 	if data.Password == "" {

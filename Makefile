@@ -1,2 +1,2 @@
-auth:
-	go run ./cmd/bookingsystem/main.go
+servers:
+	go run ./cmd/main.go

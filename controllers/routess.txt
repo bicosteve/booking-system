@@ -8,14 +8,23 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func (b *Base) Router() http.Handler {
+func (b *Base) UserAPI() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
 
-	router.Post("/api/auth/register", b.Register)
+	//router.Post("/api/auth/register", b.Register(&AuthServiceImplementation{}))
 	router.Post("/api/auth/login", b.Login)
 
 	return router
 
+}
+
+func (b *Base) AdminAPI() http.Handler {
+	router := chi.NewRouter()
+
+	router.Use(middleware.Recoverer)
+	utils.SetCors(router)
+
+	return router
 }

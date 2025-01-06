@@ -1,8 +1,8 @@
 package entities
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -63,11 +63,12 @@ type PrefConfig struct {
 }
 
 type HttpConfig struct {
-	Name string `toml:"name"`
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
-	Path string `toml:"path"`
-	Cors struct {
+	Name      string `toml:"name"`
+	Host      string `toml:"host"`
+	Port      int    `toml:"port"`
+	AdminPort int    `toml:"adminport"`
+	Path      string `toml:"path"`
+	Cors      struct {
 		AllowedMethod []string `toml:"allowed_method"`
 		AllowedHeader []string `toml:"allowed_header"`
 		AllowedOrigin []string `toml:"allowed_origin"`
@@ -86,29 +87,24 @@ type MysqlConfig struct {
 }
 
 type RedisConfig struct {
-	Name              string   `toml:"name"`
-	Address           string   `toml:"address"`
-	Database          int      `toml:"database"`
-	Username          string   `toml:"username"`
-	Password          string   `toml:"password"`
-	Nodes             []string `toml:"nodes"`
-	SentinelAddresses []string `toml:"sentinel_addresses"`
-	Args              args     `toml:"args"`
+	Name     string `toml:"name"`
+	Address  string `toml:"address"`
+	Password string `toml:"password"`
+	Port     string `toml:"port"`
+	Database int    `toml:"database"`
 }
 
 type KakfaConfig struct {
-	Name      string      `toml:"name"`
-	Broker    string      `toml:"broker"`
-	Topic     string      `toml:"topic"`
-	Key       string      `toml:"key"`
-	Data      interface{} `data:"data"`
-	Consumers string      `toml:"consumers"`
-	Producers int         `toml:"producers"`
+	Name   string `toml:"name"`
+	Broker string `toml:"broker"`
+	Topic  string `toml:"topic"`
+	Key    string `toml:"key"`
 }
 
 type UserPayload struct {
 	Email           string `json:"email"`
 	PhoneNumber     string `json:"phone_number"`
+	IsVendor        string `json:"is_vendor"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirm_password"`
 }
@@ -142,31 +138,10 @@ var MessageLogs = &Message{
 	ErrorLog: errorLog,
 }
 
-var ErrNoRecord = errors.New("models: no matching record found")
-var ErrDuplicateEmail = errors.New("models: user already exists")
-var ErrorInvalidCredentials = errors.New("models: incorrect password or email")
-var ErrorDBConnection = errors.New("db: could not connect db becacuse ")
-var ErrorDBPing = errors.New("db: could not ping db because ")
-var SuccessDBPing = "db: successfully connected to db"
-
-func (c Config) FindHttpConfig(name string) (http HttpConfig, err error) {
-	for _, config := range c.Http {
-		if config.Name == name {
-			return config, nil
-		}
-	}
-
-	return http, fmt.Errorf("no http config found for name '%v' ", err)
-}
-
-func (c Config) FindMysqlConfig(name string) (mysql MysqlConfig, err error) {
-	return MysqlConfig{}, nil
-}
-
-func (c Config) FindRedisConfig(name string) (mysql MysqlConfig, err error) {
-	return MysqlConfig{}, nil
-}
-
-func (c Config) FindKafkaConfig(name string) (mysql MysqlConfig, err error) {
-	return MysqlConfig{}, nil
-}
+var ErrNoRecord = errors.New("MODELS: no matching record found")
+var ErrDuplicateEmail = errors.New("MODELS: user already exists")
+var ErrorInvalidCredentials = errors.New("MODELS: incorrect password or email")
+var ErrorDBConnection = errors.New("DB: could not connect db becacuse ")
+var ErrorDBPing = errors.New("DB: could not ping db because ")
+var SuccessDBPing = "MYSQL: successfully connected to db"
+var CTX = context.Background()

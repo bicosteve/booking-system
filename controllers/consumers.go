@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bicosteve/booking-system/pkg/entities"
+	"github.com/bicosteve/booking-system/entities"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
