@@ -34,6 +34,9 @@ type Base struct {
 	DB            *sql.DB
 	Redis         *redis.Conn
 	ctx           context.Context
+	jwtSecret     string
+	contentType   string
+	path          string
 }
 
 func (b *Base) Init() {
@@ -80,8 +83,6 @@ func (b *Base) Init() {
 
 	}
 
-	// defer b.DB.Close()
-
 	for _, cache := range config.Redis {
 		redis, err := connections.NewRedisDB(ctx, cache)
 		if err != nil {
@@ -96,7 +97,13 @@ func (b *Base) Init() {
 	for _, p := range config.Http {
 		port = p.Port
 		adminport = p.AdminPort
+		b.contentType = p.ContentType
+		b.path = p.Path
 
+	}
+
+	for _, s := range config.Secrets {
+		b.jwtSecret = s.JWT
 	}
 
 	b.AuthPort = strconv.Itoa(port)
@@ -146,17 +153,25 @@ func (b *Base) AdminServer(wg *sync.WaitGroup, port, server string) {
 }
 
 func (b *Base) userRouter() http.Handler {
-	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
-	utils.SetCors(router)
+	r := chi.NewRouter()
+	r.Use(middleware.Recoverer)
+	utils.SetCors(r)
 
 	repo := repo.NewUserDBRepository(b.DB, b.ctx)
 	service := service.NewUserService(*repo)
 
-	router.Post("/api/auth/register", b.RegisterHandler(service))
-	router.Post("/api/user/login", b.Login)
+	// Public Routes
+	r.Post(b.path+"/user/register", b.RegisterHandler(service))
+	r.Post(b.path+"/user/login", b.LoginHandler(service))
 
-	return router
+	// Private routes
+	r.Route(b.path, func(r chi.Router) {
+		r.Use(utils.AuthMiddleware(b.jwtSecret))
+		r.Get("/user/me", b.ProfileHandler(service))
+
+	})
+
+	return r
 
 }
 
@@ -164,8 +179,6 @@ func (b *Base) adminRouter() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
-
-	router.Post("/api/admin/login", b.Login)
 
 	return router
 
