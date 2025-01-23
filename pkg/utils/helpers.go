@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -35,7 +37,7 @@ func GenerateAuthToken(user entities.User, secret string) (string, error) {
 	c := &claims{
 		Username: user.Email,
 		UserID:   user.ID,
-		IsVendor: user.IsVendor,
+		IsVendor: user.IsVender,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		},
@@ -79,4 +81,17 @@ func verifyAuthToken(tokenString, secret string) (*entities.Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func GenerateResetToken() (string, error) {
+	tknBytes := make([]byte, 32)
+	_, err := rand.Read(tknBytes)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err.Error())
+		return "", err
+	}
+
+	tkn := base64.URLEncoding.EncodeToString(tknBytes)
+
+	return tkn, nil
 }

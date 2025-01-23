@@ -11,13 +11,15 @@ import (
 )
 
 type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	PhoneNumber string    `json:"phone_number"`
-	Password    string    `json:"password"`
-	IsVendor    string    `json:"is_vendor"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	Email              string    `json:"email"`
+	PhoneNumber        string    `json:"phone_number"`
+	IsVender           string    `json:"isVender"`
+	Password           string    `json:"password"`
+	PasswordResetToken string    `json:"password_reset_token"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	PasswordInsertedAt time.Time `json:"password_inserted_at"`
 }
 
 type Config struct {
@@ -163,10 +165,10 @@ var ContextTime = time.Second * 3
 
 type usernameKey string
 type isVendorKey string
-type useridKey string
+type useridKey int
 
 const (
 	UsernameKeyValue usernameKey = "username"
 	IsVendorKeyValue isVendorKey = "isvendor"
-	UseridKeyValue   useridKey   = "userid"
+	UseridKeyValue   useridKey   = 0
 )

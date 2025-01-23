@@ -73,3 +73,29 @@ func (s *UserService) SubmitProfileRequest(ctx context.Context, email string) (*
 
 	return user, nil
 }
+
+func (s *UserService) InsertPasswordResetToken(ctx context.Context, user entities.User) error {
+
+	resetToken, err := utils.GenerateResetToken()
+	if err != nil {
+		return err
+	}
+
+	err = s.repo.InsertPasswordResetToken(ctx, resetToken, user.Email)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) SubmitPasswordChangeRequest(ctx context.Context, data entities.User, userId int) error {
+
+	err := s.repo.UpdatePassword(ctx, data, userId)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

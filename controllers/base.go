@@ -168,6 +168,7 @@ func (b *Base) userRouter() http.Handler {
 	r.Route(b.path, func(r chi.Router) {
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Get("/user/me", b.ProfileHandler(service))
+		r.Post("/user/reset", b.GenerateResetTokenHandler(service))
 
 	})
 

@@ -1,11 +1,13 @@
 CREATE TABLE user (
     user_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    email VARCHAR(255) NOT NULL, 
-    phone_number VARCHAR(11) NOT NULL, 
+    email VARCHAR(255) NOT NULL UNIQUE, 
+    phone_number VARCHAR(11) NOT NULL UNIQUE, 
     isVender ENUM('YES','NO') NOT NULL DEFAULT 'NO',
     hashed_password VARCHAR(100) NOT NULL, 
+    password_reset_token VARCHAR(250) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    password_inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_user_id ON user(user_id);

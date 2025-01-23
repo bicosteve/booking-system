@@ -114,7 +114,7 @@ func (b *Base) ProfileHandler(s *service.UserService) http.HandlerFunc {
 
 		user, err := s.SubmitProfileRequest(ctx, userName)
 		if err != nil {
-			utils.ErrorJSON(w, err, http.StatusBadRequest)
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
 			entities.MessageLogs.ErrorLog.Println(err)
 			return
 
@@ -128,4 +128,68 @@ func (b *Base) ProfileHandler(s *service.UserService) http.HandlerFunc {
 		}
 	}
 
+}
+
+func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", b.contentType)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+		defer cancel()
+
+		// Payload can come with or without some values but
+		var payload struct {
+			Email       *string `json:"email"`
+			PhoneNumber *string `json:"phone_number"`
+			IsVendor    *string `json:"is_vendor"`
+			Password    *string `json:"password"`
+		}
+
+		err := utils.SerializeJSON(w, r, &payload)
+		if err != nil {
+			utils.ErrorJSON(w, errors.New(err.Error()), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+		if payload.Email == nil {
+			utils.ErrorJSON(w, errors.New("bad request"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println("email is required field")
+			return
+		}
+
+		userName, ok := r.Context().Value(entities.UsernameKeyValue).(string)
+		if !ok {
+			utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println("error extracting username from context")
+			return
+		}
+
+		if *payload.Email != userName {
+			utils.ErrorJSON(w, errors.New("bad request"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println("session useraname mismatch!")
+			return
+		}
+
+		user, err := s.SubmitProfileRequest(ctx, userName)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+		err = s.InsertPasswordResetToken(ctx, *user)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"msg": "Success generating auth token"})
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+	}
 }
