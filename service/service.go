@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/utils"
@@ -74,24 +75,35 @@ func (s *UserService) SubmitProfileRequest(ctx context.Context, email string) (*
 	return user, nil
 }
 
-func (s *UserService) InsertPasswordResetToken(ctx context.Context, user entities.User) error {
+func (s *UserService) InsertPasswordResetToken(ctx context.Context, user entities.User) (string, error) {
 
-	resetToken, err := utils.GenerateResetToken()
+	resetToken, err := utils.GenerateResetToken(user.ID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = s.repo.InsertPasswordResetToken(ctx, resetToken, user.Email)
 	if err != nil {
+		return "", err
+	}
+
+	return resetToken, nil
+}
+
+func (s *UserService) SubmitPasswordResetRequest(ctx context.Context, password *string, tkn string) error {
+
+	isValid, id, err := utils.IsValidResetToken(tkn)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	if !isValid {
+		return errors.New("reset token has expired")
+	}
 
-func (s *UserService) SubmitPasswordChangeRequest(ctx context.Context, data entities.User, userId int) error {
+	userId, _ := strconv.Atoi(id)
 
-	err := s.repo.UpdatePassword(ctx, data, userId)
+	err = s.repo.UpdatePassword(ctx, password, userId)
 
 	if err != nil {
 		return err

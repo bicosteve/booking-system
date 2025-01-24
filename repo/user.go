@@ -135,7 +135,7 @@ func (r *UserDBRepository) InsertPasswordResetToken(ctx context.Context, resetTo
 	return nil
 }
 
-func (r *UserDBRepository) UpdatePassword(ctx context.Context, data entities.User, userId int) error {
+func (r *UserDBRepository) UpdatePassword(ctx context.Context, newPassword *string, userId int) error {
 
 	q := `
 		UPDATE user SET hash_password = ?, updated_at = ?, password_inserted_at = ? WHERE user_id = ?
@@ -147,7 +147,7 @@ func (r *UserDBRepository) UpdatePassword(ctx context.Context, data entities.Use
 
 	defer stmt.Close()
 
-	hash, err := utils.GeneratePasswordHash(data.Password)
+	hash, err := utils.GeneratePasswordHash(*newPassword)
 	if err != nil {
 		return err
 	}

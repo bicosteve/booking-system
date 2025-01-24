@@ -177,14 +177,74 @@ func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFun
 			return
 		}
 
-		err = s.InsertPasswordResetToken(ctx, *user)
+		tkn, err := s.InsertPasswordResetToken(ctx, *user)
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusInternalServerError)
 			entities.MessageLogs.ErrorLog.Println(err)
 			return
 		}
 
-		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"msg": "Success generating auth token"})
+		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"reset_tkn": tkn})
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+	}
+}
+
+func (b *Base) ResetPasswordHandler(s *service.UserService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", b.contentType)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		tkn := r.URL.Query().Get("token")
+		if len(tkn) < 1 {
+			utils.ErrorJSON(w, errors.New("reset token is required"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println("reset token is not provided in query param")
+			return
+		}
+
+		var payload struct {
+			Password        *string
+			ConfirmPassword *string
+		}
+
+		err := utils.SerializeJSON(w, r, &payload)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(err.Error())
+			return
+		}
+
+		if payload.Password != payload.ConfirmPassword {
+			utils.ErrorJSON(w, errors.New("confirm password and password  mismatch"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
+			return
+		}
+
+		if payload.Password == nil {
+			utils.ErrorJSON(w, errors.New("password  are required"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
+			return
+		}
+
+		if payload.ConfirmPassword == nil {
+			utils.ErrorJSON(w, errors.New("password  are required"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
+			return
+		}
+
+		err = s.SubmitPasswordResetRequest(ctx, payload.Password, tkn)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println(errors.New(err.Error()))
+			return
+		}
+
+		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"msg": "password successfully reset"})
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusBadRequest)
 			entities.MessageLogs.ErrorLog.Println(err)
