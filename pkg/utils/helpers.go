@@ -10,6 +10,8 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -123,4 +125,21 @@ func IsValidResetToken(token string) (bool, string, error) {
 	userId := parts[2]
 
 	return expirationTime.Before(time.Now().UTC()), userId, nil
+}
+
+func SendMail(key, from, subject, to, token string) (int, error) {
+	client := sendgrid.NewSendClient(key)
+	mail_from := mail.NewEmail("Booking System", from)
+	mail_to := mail.NewEmail("User", to)
+	plainTextContent := fmt.Sprintf("Your reset token %s. Expires in 10 minutes", token)
+	html := "<h1>Hello there! From Booking System</h1>"
+
+	message := mail.NewSingleEmail(mail_from, subject, mail_to, plainTextContent, html)
+
+	res, err := client.Send(message)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.StatusCode, nil
 }

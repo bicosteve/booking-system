@@ -107,8 +107,10 @@ type KakfaConfig struct {
 }
 
 type SecretConfig struct {
-	Name string `toml:"name"`
-	JWT  string `toml:"jwt"`
+	Name     string `toml:"name"`
+	JWT      string `toml:"jwt"`
+	Sendgrid string `toml:"sendgrid"`
+	MailFrom string `toml:"mailfrom"`
 }
 
 type UserPayload struct {

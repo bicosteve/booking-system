@@ -37,6 +37,8 @@ type Base struct {
 	jwtSecret     string
 	contentType   string
 	path          string
+	sengridkey    string
+	mailfrom      string
 }
 
 func (b *Base) Init() {
@@ -104,6 +106,8 @@ func (b *Base) Init() {
 
 	for _, s := range config.Secrets {
 		b.jwtSecret = s.JWT
+		b.sengridkey = s.Sendgrid
+		b.mailfrom = s.MailFrom
 	}
 
 	b.AuthPort = strconv.Itoa(port)

@@ -184,6 +184,15 @@ func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFun
 			return
 		}
 
+		status, err := utils.SendMail(b.sengridkey, b.mailfrom, "Reset Token", *payload.Email, tkn)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+		entities.MessageLogs.InfoLog.Println(status)
+
 		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"reset_tkn": tkn})
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusBadRequest)
