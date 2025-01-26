@@ -39,6 +39,8 @@ type Base struct {
 	path          string
 	sengridkey    string
 	mailfrom      string
+	atklng        string
+	appusername   string
 }
 
 func (b *Base) Init() {
@@ -108,6 +110,8 @@ func (b *Base) Init() {
 		b.jwtSecret = s.JWT
 		b.sengridkey = s.Sendgrid
 		b.mailfrom = s.MailFrom
+		b.atklng = s.AfricasTalking
+		b.appusername = s.AppUsername
 	}
 
 	b.AuthPort = strconv.Itoa(port)
@@ -161,7 +165,7 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
-	repo := repo.NewUserDBRepository(b.DB, b.ctx)
+	repo := repo.NewDBRepository(b.DB, b.ctx)
 	service := service.NewUserService(*repo)
 
 	// Public Routes

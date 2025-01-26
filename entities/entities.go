@@ -107,10 +107,12 @@ type KakfaConfig struct {
 }
 
 type SecretConfig struct {
-	Name     string `toml:"name"`
-	JWT      string `toml:"jwt"`
-	Sendgrid string `toml:"sendgrid"`
-	MailFrom string `toml:"mailfrom"`
+	Name           string `toml:"name"`
+	JWT            string `toml:"jwt"`
+	Sendgrid       string `toml:"sendgrid"`
+	MailFrom       string `toml:"mailfrom"`
+	AfricasTalking string `toml:"atklng"`
+	AppUsername    string `toml:"appusername"`
 }
 
 type UserPayload struct {
@@ -140,10 +142,24 @@ type SerializedUser struct {
 }
 
 type Claims struct {
-	Username string `json:"username"`
-	UserID   string `json:"user_id"`
-	IsVendor string `json:"is_vendor"`
+	Username    string `json:"username"`
+	UserID      string `json:"user_id"`
+	IsVendor    string `json:"is_vendor"`
+	PhoneNumber string `json:"phone_number"`
 	jwt.RegisteredClaims
+}
+
+type SMS struct {
+	ID        string    `json:"id"`
+	MSG       string    `json:"msg"`
+	UserID    string    `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SMSPayload struct {
+	UserID  string `json:"user_id"`
+	Message string `json:"message"`
 }
 
 type args map[string]interface{}
@@ -167,10 +183,12 @@ var ContextTime = time.Second * 3
 
 type usernameKey string
 type isVendorKey string
+type phoneNumber string
 type useridKey int
 
 const (
-	UsernameKeyValue usernameKey = "username"
-	IsVendorKeyValue isVendorKey = "isvendor"
-	UseridKeyValue   useridKey   = 0
+	UsernameKeyValue    usernameKey = "username"
+	IsVendorKeyValue    isVendorKey = "isvendor"
+	PhoneNumberKeyValue phoneNumber = "phonenumber"
+	UseridKeyValue      useridKey   = 0
 )

@@ -20,17 +20,17 @@ type UserRepository interface {
 }
 
 // 2. UserDBRepository implements UserRepository interface for mysql
-type UserDBRepository struct {
+type DBRepository struct {
 	db *sql.DB
 }
 
 // 3. NewUserDBRepository creates a new instance of UserDBRepository
-func NewUserDBRepository(db *sql.DB, ctx context.Context) *UserDBRepository {
-	return &UserDBRepository{db: db}
+func NewDBRepository(db *sql.DB, ctx context.Context) *DBRepository {
+	return &DBRepository{db: db}
 }
 
 // 4. Creates a user into the db
-func (r *UserDBRepository) CreateUser(ctx context.Context, user entities.UserPayload) error {
+func (d *DBRepository) CreateUser(ctx context.Context, user entities.UserPayload) error {
 	requestID := ctx.Value("request_id")
 	q := `
 			INSERT INTO 
@@ -38,7 +38,7 @@ func (r *UserDBRepository) CreateUser(ctx context.Context, user entities.UserPay
 			updated_at, password_inserted_at) VALUES (?,?,?,?,NOW(),NOW(), NOW())
 		`
 
-	stmt, err := r.db.PrepareContext(ctx, q)
+	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {
 		slog.Error("%s failed to prepare because of %s", "error", requestID, slog.String(err.Error(), "register"))
 		return err
@@ -65,13 +65,13 @@ func (r *UserDBRepository) CreateUser(ctx context.Context, user entities.UserPay
 
 }
 
-func (r *UserDBRepository) FindUserByEmail(ctx context.Context, email string) (bool, error) {
+func (d *DBRepository) FindUserByEmail(ctx context.Context, email string) (bool, error) {
 
 	var count int
 
 	q := `SELECT COUNT(*) FROM user WHERE email = ?`
 
-	stmt, err := r.db.PrepareContext(ctx, q)
+	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {
 		slog.Error("failed to prepare the statement due to %v", "error", err)
 		return false, err
@@ -93,11 +93,11 @@ func (r *UserDBRepository) FindUserByEmail(ctx context.Context, email string) (b
 	return count > 0, nil
 }
 
-func (r *UserDBRepository) FindAProfile(ctx context.Context, email string) (*entities.User, error) {
+func (d *DBRepository) FindAProfile(ctx context.Context, email string) (*entities.User, error) {
 	var user entities.User
 
 	q := `SELECT * FROM user WHERE email = ?`
-	stmt, err := r.db.PrepareContext(ctx, q)
+	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +115,10 @@ func (r *UserDBRepository) FindAProfile(ctx context.Context, email string) (*ent
 	return &user, nil
 }
 
-func (r *UserDBRepository) InsertPasswordResetToken(ctx context.Context, resetToken string, email string) error {
+func (d *DBRepository) InsertPasswordResetToken(ctx context.Context, resetToken string, email string) error {
 	q := `UPDATE user SET password_reset_token = ?, updated_at = ? WHERE email = ?`
 
-	stmt, err := r.db.PrepareContext(ctx, q)
+	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {
 		return err
 	}
@@ -135,12 +135,12 @@ func (r *UserDBRepository) InsertPasswordResetToken(ctx context.Context, resetTo
 	return nil
 }
 
-func (r *UserDBRepository) UpdatePassword(ctx context.Context, newPassword *string, userId int) error {
+func (d *DBRepository) UpdatePassword(ctx context.Context, newPassword *string, userId int) error {
 
 	q := `
 		UPDATE user SET hash_password = ?, updated_at = ?, password_inserted_at = ? WHERE user_id = ?
 	`
-	stmt, err := r.db.PrepareContext(ctx, q)
+	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {
 		return err
 	}

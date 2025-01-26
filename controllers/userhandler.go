@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/bicosteve/booking-system/service"
 )
 
-func (b *Base) RegisterHandler(s *service.UserService) http.HandlerFunc {
+func (b *Base) RegisterHandler(s *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", b.contentType)
 		var payload = new(entities.UserPayload)
@@ -49,7 +50,7 @@ func (b *Base) RegisterHandler(s *service.UserService) http.HandlerFunc {
 
 }
 
-func (b *Base) LoginHandler(s *service.UserService) http.HandlerFunc {
+func (b *Base) LoginHandler(s *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", b.contentType)
 		var payload = new(entities.UserPayload)
@@ -99,7 +100,7 @@ func (b *Base) LoginHandler(s *service.UserService) http.HandlerFunc {
 
 }
 
-func (b *Base) ProfileHandler(s *service.UserService) http.HandlerFunc {
+func (b *Base) ProfileHandler(s *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", b.contentType)
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -130,11 +131,32 @@ func (b *Base) ProfileHandler(s *service.UserService) http.HandlerFunc {
 
 }
 
-func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFunc {
+func (b *Base) GenerateResetTokenHandler(s *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", b.contentType)
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 		defer cancel()
+
+		userName, ok := r.Context().Value(entities.UsernameKeyValue).(string)
+		if !ok {
+			utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println("error extracting username from context")
+			return
+		}
+
+		phoneNumber, ok := r.Context().Value(entities.PhoneNumberKeyValue).(string)
+		if !ok {
+			utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println("error extracting phonenumber from context")
+			return
+		}
+
+		userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
+		if !ok {
+			utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
+			return
+		}
 
 		// Payload can come with or without some values but
 		var payload struct {
@@ -154,13 +176,6 @@ func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFun
 		if payload.Email == nil {
 			utils.ErrorJSON(w, errors.New("bad request"), http.StatusBadRequest)
 			entities.MessageLogs.ErrorLog.Println("email is required field")
-			return
-		}
-
-		userName, ok := r.Context().Value(entities.UsernameKeyValue).(string)
-		if !ok {
-			utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-			entities.MessageLogs.ErrorLog.Println("error extracting username from context")
 			return
 		}
 
@@ -184,14 +199,33 @@ func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFun
 			return
 		}
 
-		status, err := utils.SendMail(b.sengridkey, b.mailfrom, "Reset Token", *payload.Email, tkn)
+		msg := entities.SMSPayload{
+			UserID:  userID,
+			Message: tkn,
+		}
+
+		err = s.SubmitMessage(ctx, msg)
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusInternalServerError)
 			entities.MessageLogs.ErrorLog.Println(err)
 			return
 		}
 
-		entities.MessageLogs.InfoLog.Println(status)
+		ujumbe := fmt.Sprintf("Your reset token is '%s' ", tkn)
+
+		_, err = utils.SendMail(b.sengridkey, b.mailfrom, "Reset Token", *payload.Email, ujumbe)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
+
+		_, err = utils.SendSMS(b.atklng, b.appusername, phoneNumber, ujumbe)
+		if err != nil {
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			entities.MessageLogs.ErrorLog.Println(err)
+			return
+		}
 
 		err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"reset_tkn": tkn})
 		if err != nil {
@@ -203,7 +237,7 @@ func (b *Base) GenerateResetTokenHandler(s *service.UserService) http.HandlerFun
 	}
 }
 
-func (b *Base) ResetPasswordHandler(s *service.UserService) http.HandlerFunc {
+func (b *Base) ResetPasswordHandler(s *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", b.contentType)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

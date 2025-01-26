@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/edwinwalela/africastalking-go/pkg/sms"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -39,9 +40,10 @@ func ComparePasswordWithHash(password string, hash *string) bool {
 func GenerateAuthToken(user entities.User, secret string) (string, error) {
 	type claims entities.Claims
 	c := &claims{
-		Username: user.Email,
-		UserID:   user.ID,
-		IsVendor: user.IsVender,
+		Username:    user.Email,
+		UserID:      user.ID,
+		IsVendor:    user.IsVender,
+		PhoneNumber: user.PhoneNumber,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		},
@@ -142,4 +144,32 @@ func SendMail(key, from, subject, to, token string) (int, error) {
 	}
 
 	return res.StatusCode, nil
+}
+
+func SendSMS(key, username, phoneNumber, msg string) (string, error) {
+
+	client := &sms.Client{
+		ApiKey:    key,
+		Username:  username,
+		IsSandbox: true,
+	}
+
+	number := fmt.Sprintf("+254%s", phoneNumber)
+
+	request := &sms.BulkRequest{
+		To:            []string{number}, // can have more than one number
+		Message:       msg,
+		From:          username,      // app username
+		BulkSMSMode:   true,          // set to true to avoid overchaging
+		Enqueue:       false,         // send to a queue to dispatch later
+		RetryDuration: time.Hour * 2, // retries after one hour
+	}
+
+	res, err := client.SendBulk(request)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		return "", err
+	}
+
+	return res.Message, nil
 }

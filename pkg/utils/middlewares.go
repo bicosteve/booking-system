@@ -37,6 +37,7 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), entities.UsernameKeyValue, claims.Username)
 			ctx = context.WithValue(ctx, entities.IsVendorKeyValue, claims.IsVendor)
 			ctx = context.WithValue(ctx, entities.UseridKeyValue, claims.UserID)
+			ctx = context.WithValue(ctx, entities.PhoneNumberKeyValue, claims.PhoneNumber)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 

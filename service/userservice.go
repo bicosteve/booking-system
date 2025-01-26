@@ -11,15 +11,15 @@ import (
 )
 
 // UserService
-type UserService struct {
-	repo repo.UserDBRepository
+type Service struct {
+	repo repo.DBRepository
 }
 
-func NewUserService(r repo.UserDBRepository) *UserService {
-	return &UserService{repo: r}
+func NewUserService(r repo.DBRepository) *Service {
+	return &Service{repo: r}
 }
 
-func (s *UserService) SubmitRegistrationRequest(ctx context.Context, data entities.UserPayload) error {
+func (s *Service) SubmitRegistrationRequest(ctx context.Context, data entities.UserPayload) error {
 	isAvailable, err := s.repo.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (s *UserService) SubmitRegistrationRequest(ctx context.Context, data entiti
 	return nil
 }
 
-func (s *UserService) SubmitLoginRequest(ctx context.Context, data entities.UserPayload, secret string) (string, error) {
+func (s *Service) SubmitLoginRequest(ctx context.Context, data entities.UserPayload, secret string) (string, error) {
 	isAvailable, err := s.repo.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func (s *UserService) SubmitLoginRequest(ctx context.Context, data entities.User
 	return token, nil
 }
 
-func (s *UserService) SubmitProfileRequest(ctx context.Context, email string) (*entities.User, error) {
+func (s *Service) SubmitProfileRequest(ctx context.Context, email string) (*entities.User, error) {
 
 	user, err := s.repo.FindAProfile(ctx, email)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *UserService) SubmitProfileRequest(ctx context.Context, email string) (*
 	return user, nil
 }
 
-func (s *UserService) InsertPasswordResetToken(ctx context.Context, user entities.User) (string, error) {
+func (s *Service) InsertPasswordResetToken(ctx context.Context, user entities.User) (string, error) {
 
 	resetToken, err := utils.GenerateResetToken(user.ID)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *UserService) InsertPasswordResetToken(ctx context.Context, user entitie
 	return resetToken, nil
 }
 
-func (s *UserService) SubmitPasswordResetRequest(ctx context.Context, password *string, tkn string) error {
+func (s *Service) SubmitPasswordResetRequest(ctx context.Context, password *string, tkn string) error {
 
 	isValid, id, err := utils.IsValidResetToken(tkn)
 	if err != nil {

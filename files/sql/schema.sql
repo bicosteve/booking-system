@@ -49,3 +49,15 @@ CREATE TABLE transaction(
 );
 
 CREATE INDEX idx_transaction_id ON transaction(transaction_id);
+
+
+CREATE TABLE sms_outbox(
+    sms_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    msg VARCHAR(255) NOT NULL, 
+    user_id BIGINT NOT NULL, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(user_id)
+);
+
+CREATE INDEX idx_sms_out_outbox ON sms_outbox(sms_id);
