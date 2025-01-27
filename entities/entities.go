@@ -1,32 +1,36 @@
 package entities
 
 import (
-	"context"
 	"errors"
 	"log"
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	PhoneNumber string    `json:"phone_number"`
-	Password    string    `json:"password"`
-	IsSeller    bool      `json:"is_seller"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	Email              string    `json:"email"`
+	PhoneNumber        string    `json:"phone_number"`
+	IsVender           string    `json:"isVender"`
+	Password           string    `json:"password"`
+	PasswordResetToken string    `json:"password_reset_token"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	PasswordInsertedAt time.Time `json:"password_inserted_at"`
 }
 
 type Config struct {
-	App    AppConfig     `toml:"app"`
-	Logger LoggerConfig  `toml:"logger"`
-	Notify NotifyConfig  `toml:"notify"`
-	Http   []HttpConfig  `toml:"http"`
-	Mysql  []MysqlConfig `toml:"mysql"`
-	Redis  []RedisConfig `toml:"redis"`
-	Kafka  []KakfaConfig `toml:"kafka"`
+	App     AppConfig      `toml:"app"`
+	Logger  LoggerConfig   `toml:"logger"`
+	Notify  NotifyConfig   `toml:"notify"`
+	Http    []HttpConfig   `toml:"http"`
+	Mysql   []MysqlConfig  `toml:"mysql"`
+	Redis   []RedisConfig  `toml:"redis"`
+	Kafka   []KakfaConfig  `toml:"kafka"`
+	Secrets []SecretConfig `toml:"secrets"`
 }
 
 type AppConfig struct {
@@ -73,7 +77,8 @@ type HttpConfig struct {
 		AllowedHeader []string `toml:"allowed_header"`
 		AllowedOrigin []string `toml:"allowed_origin"`
 	} `toml:"cors"`
-	Args args `toml:"args"`
+	Args        args   `toml:"args"`
+	ContentType string `toml:"contenttype"`
 }
 
 type MysqlConfig struct {
@@ -99,6 +104,15 @@ type KakfaConfig struct {
 	Broker string `toml:"broker"`
 	Topic  string `toml:"topic"`
 	Key    string `toml:"key"`
+}
+
+type SecretConfig struct {
+	Name           string `toml:"name"`
+	JWT            string `toml:"jwt"`
+	Sendgrid       string `toml:"sendgrid"`
+	MailFrom       string `toml:"mailfrom"`
+	AfricasTalking string `toml:"atklng"`
+	AppUsername    string `toml:"appusername"`
 }
 
 type UserPayload struct {
@@ -127,6 +141,27 @@ type SerializedUser struct {
 	Password string `json:"password"`
 }
 
+type Claims struct {
+	Username    string `json:"username"`
+	UserID      string `json:"user_id"`
+	IsVendor    string `json:"is_vendor"`
+	PhoneNumber string `json:"phone_number"`
+	jwt.RegisteredClaims
+}
+
+type SMS struct {
+	ID        string    `json:"id"`
+	MSG       string    `json:"msg"`
+	UserID    string    `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SMSPayload struct {
+	UserID  string `json:"user_id"`
+	Message string `json:"message"`
+}
+
 type args map[string]interface{}
 
 var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -144,4 +179,16 @@ var ErrorInvalidCredentials = errors.New("MODELS: incorrect password or email")
 var ErrorDBConnection = errors.New("DB: could not connect db becacuse ")
 var ErrorDBPing = errors.New("DB: could not ping db because ")
 var SuccessDBPing = "MYSQL: successfully connected to db"
-var CTX = context.Background()
+var ContextTime = time.Second * 3
+
+type usernameKey string
+type isVendorKey string
+type phoneNumber string
+type useridKey int
+
+const (
+	UsernameKeyValue    usernameKey = "username"
+	IsVendorKeyValue    isVendorKey = "isvendor"
+	PhoneNumberKeyValue phoneNumber = "phonenumber"
+	UseridKeyValue      useridKey   = 0
+)
