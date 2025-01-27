@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,6 +91,8 @@ func verifyAuthToken(tokenString, secret string) (*entities.Claims, error) {
 }
 
 func GenerateResetToken(userId string) (string, error) {
+	// 1.  Generate a random string for the token
+	// and encode the byte slice to URL-safe Base64 string
 	tknBytes := make([]byte, 32)
 	_, err := rand.Read(tknBytes)
 	if err != nil {
@@ -97,36 +100,49 @@ func GenerateResetToken(userId string) (string, error) {
 		return "", err
 	}
 
-	// encode the byte slice to URL-safe Base64 string
-	tknString := base64.URLEncoding.EncodeToString(tknBytes)
+	tkn := base64.URLEncoding.EncodeToString(tknBytes)
 
-	// Generate the current timestamp and turn it into a string
-	expirationTime := time.Now().UTC().Add(10 * time.Minute)
-	expirationTimeToString := expirationTime.Format(time.RFC3339)
+	// 2. Get  Current Time in UTC and add 10 minutes
+	currentTime := time.Now().UTC()
+	expireAt := currentTime.Add(10 * time.Minute)
+	expireTimeInMillis := expireAt.UnixMilli()
 
-	// Combine the tokenString and expirationTimeToString to form reset token
-	tkn := fmt.Sprintf("%s_%s_%s", tknString, expirationTimeToString, userId)
+	// 3. Combine the tokenString and expirationTimeToString to form reset token
+	tknString := fmt.Sprintf("%s|%d|%s", tkn, expireTimeInMillis, userId)
 
-	return tkn, nil
+	return tknString, nil
+
 }
 
 func IsValidResetToken(token string) (bool, string, error) {
-	parts := strings.Split(token, "_")
+	// 1. Split token string into 3 parts to separate randStr, timeInMillis, userID
+	parts := strings.Split(token, "|")
 	if len(parts) < 3 {
-		entities.MessageLogs.ErrorLog.Println("invalid reset token string")
-		return false, "", errors.New("token string is invalid")
+		entities.MessageLogs.ErrorLog.Println("invalid reset token")
+		return false, "", errors.New("invalid reset token")
 	}
 
 	tokenExpirationStr := parts[1]
-	expirationTime, err := time.Parse(time.RFC3339, tokenExpirationStr)
-	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
-		return false, "", errors.New(err.Error())
-	}
-
 	userId := parts[2]
 
-	return expirationTime.Before(time.Now().UTC()), userId, nil
+	// 2. Convert expiration time from string to int
+	timeInInt, err := strconv.Atoi(tokenExpirationStr)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err.Error())
+		return false, "", err
+	}
+
+	// 3. Convert expiration time from milliseconds to time.Time & get current time
+	expirationTime := time.UnixMilli(int64(timeInInt)).UTC()
+	currentTime := time.Now().UTC()
+
+	// 4. Compare current time with expiration time, return true
+	if currentTime.After(expirationTime) {
+		return false, "", nil
+	}
+
+	return true, userId, nil
+
 }
 
 func SendMail(key, from, subject, to, token string) (int, error) {

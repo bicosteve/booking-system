@@ -138,7 +138,7 @@ func (d *DBRepository) InsertPasswordResetToken(ctx context.Context, resetToken 
 func (d *DBRepository) UpdatePassword(ctx context.Context, newPassword *string, userId int) error {
 
 	q := `
-		UPDATE user SET hash_password = ?, updated_at = ?, password_inserted_at = ? WHERE user_id = ?
+		UPDATE user SET hashed_password = ?, updated_at = ?, password_inserted_at = ? WHERE user_id = ?
 	`
 	stmt, err := d.db.PrepareContext(ctx, q)
 	if err != nil {

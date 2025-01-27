@@ -251,8 +251,8 @@ func (b *Base) ResetPasswordHandler(s *service.Service) http.HandlerFunc {
 		}
 
 		var payload struct {
-			Password        *string
-			ConfirmPassword *string
+			Password        *string `json:"password"`
+			ConfirmPassword *string `json:"confirm-password"`
 		}
 
 		err := utils.SerializeJSON(w, r, &payload)
@@ -262,20 +262,20 @@ func (b *Base) ResetPasswordHandler(s *service.Service) http.HandlerFunc {
 			return
 		}
 
-		if payload.Password != payload.ConfirmPassword {
+		if *payload.Password != *payload.ConfirmPassword {
 			utils.ErrorJSON(w, errors.New("confirm password and password  mismatch"), http.StatusBadRequest)
 			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
 			return
 		}
 
 		if payload.Password == nil {
-			utils.ErrorJSON(w, errors.New("password  are required"), http.StatusBadRequest)
+			utils.ErrorJSON(w, errors.New("password  is required"), http.StatusBadRequest)
 			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
 			return
 		}
 
 		if payload.ConfirmPassword == nil {
-			utils.ErrorJSON(w, errors.New("password  are required"), http.StatusBadRequest)
+			utils.ErrorJSON(w, errors.New("confirm password  is required"), http.StatusBadRequest)
 			entities.MessageLogs.ErrorLog.Println(errors.New("confirm password and password  are required"))
 			return
 		}
