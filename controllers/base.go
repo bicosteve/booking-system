@@ -32,8 +32,7 @@ type Base struct {
 	Topic         string
 	Key           string
 	DB            *sql.DB
-	Redis         *redis.Conn
-	ctx           context.Context
+	Redis         *redis.Client
 	jwtSecret     string
 	contentType   string
 	path          string
@@ -41,6 +40,7 @@ type Base struct {
 	mailfrom      string
 	atklng        string
 	appusername   string
+	userService   *service.UserService
 }
 
 func (b *Base) Init() {
@@ -77,24 +77,25 @@ func (b *Base) Init() {
 	}
 
 	for _, sql := range config.Mysql {
-		mysqldb, err := connections.ConnectSQLDB(ctx, sql)
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", sql.Username, sql.Password, sql.Host, sql.Port, sql.Schema)
+		db, err := connections.DatabaseConnection(dsn)
 		if err != nil {
 			entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect db due to %v", err)
 			os.Exit(1)
 		}
 
-		b.DB = mysqldb.Connection
+		b.DB = db
 
 	}
 
 	for _, cache := range config.Redis {
-		redis, err := connections.NewRedisDB(ctx, cache)
+		redisClient, err := connections.NewRedisDB(ctx, cache)
 		if err != nil {
 			entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect redis due to %v", err)
 			os.Exit(1)
 		}
 
-		b.Redis = redis.Client.Conn()
+		b.Redis = redisClient
 
 	}
 
@@ -121,6 +122,10 @@ func (b *Base) Init() {
 	b.Broker = brokerURL
 	b.Topic = authTopic
 	b.Key = authKey
+
+	userRepository := repo.NewDBRepository(b.DB)
+	userService := service.NewUserService(*userRepository)
+	b.userService = userService
 
 	entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
 
@@ -165,19 +170,16 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
-	repo := repo.NewDBRepository(b.DB, b.ctx)
-	service := service.NewUserService(*repo)
-
 	// Public Routes
-	r.Post(b.path+"/user/register", b.RegisterHandler(service))
-	r.Post(b.path+"/user/login", b.LoginHandler(service))
+	r.Post(b.path+"/user/register", b.RegisterHandler)
+	r.Post(b.path+"/user/login", b.LoginHandler)
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
-		r.Get("/user/me", b.ProfileHandler(service))
-		r.Post("/user/reset", b.GenerateResetTokenHandler(service))
-		r.Post("/user/password-reset", b.ResetPasswordHandler(service))
+		r.Get("/user/me", b.ProfileHandler)
+		r.Post("/user/reset", b.GenerateResetTokenHandler)
+		r.Post("/user/password-reset", b.ResetPasswordHandler)
 
 	})
 

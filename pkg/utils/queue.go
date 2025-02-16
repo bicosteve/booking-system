@@ -3,7 +3,10 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -30,7 +33,7 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					entities.MessageLogs.ErrorLog.Printf("Message deliver because of %v\n ", ev.TopicPartition)
+					entities.MessageLogs.ErrorLog.Printf("Message not delivered because of %v\n ", ev.TopicPartition)
 				} else {
 					entities.MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
 
@@ -55,6 +58,16 @@ func SendMessageToKafka(broker, topic, key string, data any) error {
 }
 
 func ProducerConnect(brokerString string) (*kafka.Producer, error) {
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		entities.MessageLogs.InfoLog.Printf("PRODUCER: Received termination signal. Exiting")
+
+	}()
+
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": brokerString,
 		"acks":              "all",
@@ -71,6 +84,15 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 }
 
 func ConsumerConnect(broker string) (*kafka.Consumer, error) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		entities.MessageLogs.InfoLog.Printf("CONSUMER: Received termination signal. Exiting")
+
+	}()
+
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": broker,
 		"group.id":          "kafka-go-getting-started",

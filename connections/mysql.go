@@ -1,38 +1,30 @@
 package connections
 
 import (
-	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-type Mysqldb struct {
-	Connection *sql.DB
-	CTX        context.Context
-	Config     entities.MysqlConfig
-}
-
-func ConnectSQLDB(ctx context.Context, config entities.MysqlConfig) (Mysqldb, error) {
-
-	connection, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", config.Username, config.Password, config.Host, config.Port, config.Schema))
+func DatabaseConnection(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return Mysqldb{}, err
+		return nil, err
 	}
 
-	connection.SetMaxOpenConns(10)
-	connection.SetMaxIdleConns(10)
-	connection.SetConnMaxLifetime(5 * time.Second)
-	connection.SetConnMaxIdleTime(5 * time.Second)
+	err = db.Ping()
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Printf("%s %s", entities.ErrorDBPing.Error(), err)
+		return nil, err
+	}
 
-	db := &Mysqldb{Connection: connection, CTX: ctx, Config: config}
-
-	// defer connection.Close()
+	db.SetConnMaxLifetime(time.Minute)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxIdleTime(time.Second * 60)
 
 	entities.MessageLogs.InfoLog.Printf("%s", entities.SuccessDBPing)
-
-	return *db, nil
-
+	return db, nil
 }
