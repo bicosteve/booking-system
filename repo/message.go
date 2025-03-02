@@ -2,16 +2,15 @@ package repo
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/bicosteve/booking-system/entities"
 )
 
-func AddSMSOutbox(ctx context.Context, d *sql.DB, msg entities.SMSPayload) error {
+func (r *Repository) AddSMSOutbox(ctx context.Context, msg entities.SMSPayload) error {
 	q := `INSERT INTO sms_outbox(msg, user_id) VALUES(?,?)`
 
-	stmt, err := d.PrepareContext(ctx, q)
+	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
 		return err

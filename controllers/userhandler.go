@@ -9,7 +9,6 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/utils"
-	"github.com/bicosteve/booking-system/service"
 )
 
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +109,7 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := b.userService.SubmitProfileRequest(ctx, userName)
 	if err != nil {
-		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		utils.ErrorJSON(w, err, http.StatusNotFound)
 		entities.MessageLogs.ErrorLog.Println(err)
 		return
 
@@ -196,7 +195,7 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 		Message: tkn,
 	}
 
-	err = service.SubmitMessage(ctx, b.DB, msg)
+	err = b.userService.SubmitMessage(ctx, b.DB, msg)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err)
