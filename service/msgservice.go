@@ -2,12 +2,13 @@ package service
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/bicosteve/booking-system/entities"
 )
 
-func (s *Service) SubmitMessage(ctx context.Context, data entities.SMSPayload) error {
-	err := s.repo.AddSMSOutbox(ctx, data)
+func (u *UserService) SubmitMessage(ctx context.Context, d *sql.DB, data entities.SMSPayload) error {
+	err := u.userRepository.AddSMSOutbox(ctx, data)
 	if err != nil {
 		return err
 	}

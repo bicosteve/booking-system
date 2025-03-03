@@ -162,6 +162,13 @@ type SMSPayload struct {
 	Message string `json:"message"`
 }
 
+func BuildSMSPayload() *SMSPayload {
+	return &SMSPayload{
+		UserID:  "1",
+		Message: "test",
+	}
+}
+
 type args map[string]interface{}
 
 var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)

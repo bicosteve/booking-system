@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strconv"
 
@@ -10,17 +11,16 @@ import (
 	"github.com/bicosteve/booking-system/repo"
 )
 
-// UserService
-type Service struct {
-	repo repo.DBRepository
+type UserService struct {
+	userRepository repo.Repository
 }
 
-func NewUserService(r repo.DBRepository) *Service {
-	return &Service{repo: r}
+func NewUserService(userRepository repo.Repository) *UserService {
+	return &UserService{userRepository: userRepository}
 }
 
-func (s *Service) SubmitRegistrationRequest(ctx context.Context, data entities.UserPayload) error {
-	isAvailable, err := s.repo.FindUserByEmail(ctx, data.Email)
+func (s *UserService) SubmitRegistrationRequest(ctx context.Context, data entities.UserPayload) error {
+	isAvailable, err := s.userRepository.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (s *Service) SubmitRegistrationRequest(ctx context.Context, data entities.U
 		return errors.New("user already registered")
 	}
 
-	err = s.repo.CreateUser(ctx, data)
+	err = s.userRepository.CreateUser(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -37,8 +37,8 @@ func (s *Service) SubmitRegistrationRequest(ctx context.Context, data entities.U
 	return nil
 }
 
-func (s *Service) SubmitLoginRequest(ctx context.Context, data entities.UserPayload, secret string) (string, error) {
-	isAvailable, err := s.repo.FindUserByEmail(ctx, data.Email)
+func (s *UserService) SubmitLoginRequest(ctx context.Context, data entities.UserPayload, secret string) (string, error) {
+	isAvailable, err := s.userRepository.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		return "", err
 	}
@@ -47,7 +47,7 @@ func (s *Service) SubmitLoginRequest(ctx context.Context, data entities.UserPayl
 		return "", errors.New("user is not available")
 	}
 
-	user, err := s.repo.FindAProfile(ctx, data.Email)
+	user, err := s.userRepository.FindAProfile(ctx, data.Email)
 	if err != nil {
 		return "", err
 	}
@@ -65,9 +65,9 @@ func (s *Service) SubmitLoginRequest(ctx context.Context, data entities.UserPayl
 	return token, nil
 }
 
-func (s *Service) SubmitProfileRequest(ctx context.Context, email string) (*entities.User, error) {
+func (s *UserService) SubmitProfileRequest(ctx context.Context, email string) (*entities.User, error) {
 
-	user, err := s.repo.FindAProfile(ctx, email)
+	user, err := s.userRepository.FindAProfile(ctx, email)
 	if err != nil {
 		return nil, err
 	}
@@ -75,14 +75,14 @@ func (s *Service) SubmitProfileRequest(ctx context.Context, email string) (*enti
 	return user, nil
 }
 
-func (s *Service) InsertPasswordResetToken(ctx context.Context, user entities.User) (string, error) {
+func (s *UserService) InsertPasswordResetToken(ctx context.Context, d *sql.DB, user entities.User) (string, error) {
 
 	resetToken, err := utils.GenerateResetToken(user.ID)
 	if err != nil {
 		return "", err
 	}
 
-	err = s.repo.InsertPasswordResetToken(ctx, resetToken, user.Email)
+	err = s.userRepository.InsertPasswordResetToken(ctx, resetToken, user.Email)
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +90,7 @@ func (s *Service) InsertPasswordResetToken(ctx context.Context, user entities.Us
 	return resetToken, nil
 }
 
-func (s *Service) SubmitPasswordResetRequest(ctx context.Context, password *string, tkn string) error {
+func (s *UserService) SubmitPasswordResetRequest(ctx context.Context, d *sql.DB, password *string, tkn string) error {
 
 	isValid, id, err := utils.IsValidResetToken(tkn)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *Service) SubmitPasswordResetRequest(ctx context.Context, password *stri
 
 	userId, _ := strconv.Atoi(id)
 
-	err = s.repo.UpdatePassword(ctx, password, userId)
+	err = s.userRepository.UpdatePassword(ctx, password, userId)
 
 	if err != nil {
 		return err

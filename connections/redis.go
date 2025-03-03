@@ -8,13 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Redisdb struct {
-	Client *redis.Client
-	ctx    context.Context
-	Config entities.RedisConfig
-}
-
-func NewRedisDB(ctx context.Context, config entities.RedisConfig) (Redisdb, error) {
+func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:         config.Address + ":" + config.Port,
 		Password:     config.Password,
@@ -27,12 +21,10 @@ func NewRedisDB(ctx context.Context, config entities.RedisConfig) (Redisdb, erro
 
 	pong, err := client.Ping(ctx).Result()
 	if err != nil {
-		return Redisdb{}, err
+		return nil, err
 	}
 
 	entities.MessageLogs.InfoLog.Printf("REDIS: %v", pong)
 
-	redis := Redisdb{Client: client, ctx: ctx, Config: config}
-
-	return redis, nil
+	return client, nil
 }

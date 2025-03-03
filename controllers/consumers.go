@@ -41,7 +41,7 @@ func (b *Base) AuthConsumer(wg *sync.WaitGroup) {
 		select {
 		case <-ctx.Done():
 			consumer.Close()
-			entities.MessageLogs.InfoLog.Printf("Detected signal %v: terminating\n", <-ctx.Done())
+			entities.MessageLogs.InfoLog.Printf("Detected termination signal %v: exiting\n", <-ctx.Done())
 			os.Exit(1)
 		default:
 			msg, err := consumer.ReadMessage(1000 * time.Millisecond)
