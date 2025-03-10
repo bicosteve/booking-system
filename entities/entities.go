@@ -123,6 +123,21 @@ type UserPayload struct {
 	ConfirmPassword string `json:"confirm_password"`
 }
 
+type RoomPayload struct {
+	Cost   string `json:"cost"`
+	Status string `json:"status"`
+	Vendor int    `json:"vendor"`
+}
+
+type Room struct {
+	ID        string    `json:""id`
+	Cost      string    `json:"const"`
+	Status    string    `json:"status"`
+	VenderId  string    `json:"vender_id"`
+	CreateAt  time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Envelope map[string]interface{}
 
 type Message struct {

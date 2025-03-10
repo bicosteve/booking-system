@@ -8,16 +8,7 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/utils"
-	"github.com/bicosteve/booking-system/repo"
 )
-
-type UserService struct {
-	userRepository repo.Repository
-}
-
-func NewUserService(userRepository repo.Repository) *UserService {
-	return &UserService{userRepository: userRepository}
-}
 
 func (s *UserService) SubmitRegistrationRequest(ctx context.Context, data entities.UserPayload) error {
 	isAvailable, err := s.userRepository.FindUserByEmail(ctx, data.Email)

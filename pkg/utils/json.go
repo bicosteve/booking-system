@@ -153,3 +153,15 @@ func ValidateLogin(data *entities.UserPayload) error {
 
 	return nil
 }
+
+func ValidateRoom(data *entities.RoomPayload) error {
+	if data.Cost == "" {
+		return errors.New("room cost is required")
+	}
+
+	if data.Status == "" {
+		return errors.New("room status required")
+	}
+
+	return nil
+}
