@@ -17,6 +17,68 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func ValidateUser(data *entities.UserPayload) error {
+
+	if data.Email == "" {
+		return errors.New("email is required")
+	}
+
+	if !entities.EmailRegex.MatchString(data.Email) {
+		return errors.New("valid email needed")
+	}
+
+	if data.PhoneNumber == "" {
+		return errors.New("phone number is required")
+	}
+
+	if data.IsVendor == "" {
+		return errors.New("isVendor is required")
+	}
+
+	if data.Password == "" {
+		return errors.New("password is required")
+	}
+
+	if data.ConfirmPassword == "" {
+		return errors.New("confirm password is required")
+	}
+
+	if strings.Compare(data.Password, data.ConfirmPassword) != 0 {
+		return errors.New("password and confirm password is must match")
+	}
+
+	return nil
+}
+
+func ValidateLogin(data *entities.UserPayload) error {
+
+	if data.Email == "" {
+		return errors.New("email is required")
+	}
+
+	if !entities.EmailRegex.MatchString(data.Email) {
+		return errors.New("valid email needed")
+	}
+
+	if data.Password == "" {
+		return errors.New("password is required")
+	}
+
+	return nil
+}
+
+func ValidateRoom(data *entities.RoomPayload) error {
+	if data.Cost == "" {
+		return errors.New("room cost is required")
+	}
+
+	if data.Status == "" {
+		return errors.New("room status required")
+	}
+
+	return nil
+}
+
 func GeneratePasswordHash(p string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
@@ -188,4 +250,27 @@ func SendSMS(key, username, phoneNumber, msg string) (string, error) {
 	}
 
 	return res.Message, nil
+}
+
+func ValidateFilters(f entities.Filters) error {
+	if f.Page < 0 || f.Page > 100 {
+		return errors.New("page must be between 1 and 100")
+	}
+
+	if f.PageSize < 0 || f.PageSize > 20 {
+		return errors.New("page size must be between 1 and 20")
+	}
+
+	sortSafeList := []string{"id", "cost", "created_at"}
+
+	for _, list := range sortSafeList {
+		if list == f.Sort {
+			return nil
+		} else {
+			return errors.New("provided sort parameter is not allowed")
+		}
+
+	}
+
+	return nil
 }

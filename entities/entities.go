@@ -214,3 +214,9 @@ const (
 	PhoneNumberKeyValue phoneNumber = "phonenumber"
 	UseridKeyValue      useridKey   = 0
 )
+
+type Filters struct {
+	Page     int
+	PageSize int
+	Sort     string
+}
