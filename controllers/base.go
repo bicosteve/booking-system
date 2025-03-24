@@ -204,8 +204,8 @@ func (b *Base) adminRouter() http.Handler {
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Use(utils.AdminMiddlware)
 		r.Post("/admin/rooms", b.CreateRoomHandler)
-		r.Put("/admin/rooms", b.UpdateARoom)
-		r.Delete("/admin/rooms", b.DeleteARoom)
+		r.Put("/admin/rooms/{room_id}", b.UpdateARoom)
+		r.Delete("/admin/rooms/{room_id}", b.DeleteARoom)
 
 	})
 

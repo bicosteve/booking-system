@@ -34,9 +34,9 @@ func (rs *RoomService) FindRooms(ctx context.Context) ([]*entities.Room, error) 
 	return rooms, nil
 }
 
-func (rs *RoomService) UpdateARoom(ctx context.Context, data entities.Room, roomID int) error {
+func (rs *RoomService) UpdateARoom(ctx context.Context, data entities.Room, roomID, vendorId int) error {
 
-	err := rs.roomRepository.UpdateARoom(ctx, data, roomID)
+	err := rs.roomRepository.UpdateARoom(ctx, data, roomID, vendorId)
 
 	if err != nil {
 		return err

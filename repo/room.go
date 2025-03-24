@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bicosteve/booking-system/entities"
 )
@@ -100,9 +101,9 @@ func (r *Repository) AllRooms(ctx context.Context) ([]*entities.Room, error) {
 	return rooms, nil
 }
 
-func (r *Repository) UpdateARoom(ctx context.Context, room entities.Room, roomId int) error {
+func (r *Repository) UpdateARoom(ctx context.Context, room entities.Room, roomId, venderID int) error {
 	q := `
-		UPDATE room SET cost = ?, status = ? WHERE room_id = ? AND vender_id = ?
+		UPDATE room SET cost = ?, status = ?, updated_at = ? WHERE room_id = ? AND vender_id = ?
 	`
 	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
@@ -111,7 +112,7 @@ func (r *Repository) UpdateARoom(ctx context.Context, room entities.Room, roomId
 
 	defer stmt.Close()
 
-	args := []interface{}{room.Cost, room.Status, room.ID, roomId}
+	args := []interface{}{room.Cost, room.Status, time.Now(), room.ID, roomId}
 
 	_, err = stmt.ExecContext(ctx, args...)
 	if err != nil {
