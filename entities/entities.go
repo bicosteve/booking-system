@@ -130,8 +130,8 @@ type RoomPayload struct {
 }
 
 type Room struct {
-	ID        string    `json:""id`
-	Cost      string    `json:"const"`
+	ID        string    `json:"id"`
+	Cost      string    `json:"cost"`
 	Status    string    `json:"status"`
 	VenderId  string    `json:"vender_id"`
 	CreateAt  time.Time `json:"created_at"`

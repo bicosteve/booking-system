@@ -63,7 +63,7 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (b *Base) FindRoomAHandler(w http.ResponseWriter, r *http.Request) {
+func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
@@ -71,32 +71,53 @@ func (b *Base) FindRoomAHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	roomId := r.URL.Query().Get("room_id")
-	if roomId == "" {
-		utils.ErrorJSON(w, errors.New("room ID is required"), http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println("room ID is empty")
-		return
-	}
 
-	id, err := strconv.Atoi(roomId)
+	rooms, err := b.roomService.FindRooms(ctx)
 	if err != nil {
-		utils.ErrorJSON(w, errors.New("provided id is invalid"), http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println("provided id is invalid")
-		return
-	}
-
-	room, err := b.roomService.FindARoom(ctx, id)
-	if err != nil {
-		utils.ErrorJSON(w, err, http.StatusNotFound)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err.Error())
 		return
 	}
 
-	err = utils.DeserializeJSON(w, http.StatusOK, room)
-	if err != nil {
-		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err)
-		return
+	if roomId != "" {
+		id, err := strconv.Atoi(roomId)
+		if err != nil {
+			utils.ErrorJSON(w, errors.New("provided id is invalid"), http.StatusBadRequest)
+			entities.MessageLogs.ErrorLog.Println("provided id is invalid")
+			return
+		}
+
+		for _, room := range rooms {
+			room_id, _ := strconv.Atoi(room.ID)
+			if room_id == id {
+				_ = utils.DeserializeJSON(w, http.StatusOK, room)
+				return
+			} else {
+				utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
+				entities.MessageLogs.ErrorLog.Println("room not found")
+				return
+			}
+
+		}
 
 	}
+
+	_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
+
+}
+
+func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	defer cancel()
+
+	_ = ctx
+
+}
+
+func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	defer cancel()
+
+	_ = ctx
 
 }

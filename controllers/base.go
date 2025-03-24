@@ -180,6 +180,7 @@ func (b *Base) userRouter() http.Handler {
 	// Public Routes
 	r.Post(b.path+"/user/register", b.RegisterHandler)
 	r.Post(b.path+"/user/login", b.LoginHandler)
+	r.Get(b.path+"/user/rooms", b.FindRoomHandler)
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
@@ -203,6 +204,8 @@ func (b *Base) adminRouter() http.Handler {
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Use(utils.AdminMiddlware)
 		r.Post("/admin/rooms", b.CreateRoomHandler)
+		r.Put("/admin/rooms", b.UpdateARoom)
+		r.Delete("/admin/rooms", b.DeleteARoom)
 
 	})
 

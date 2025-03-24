@@ -24,7 +24,7 @@ func (rs *RoomService) FindARoom(ctx context.Context, roomID int) (*entities.Roo
 	return room, nil
 }
 
-func (rs *RoomService) FindRooms(ctx context.Context, filters int) ([]*entities.Room, error) {
+func (rs *RoomService) FindRooms(ctx context.Context) ([]*entities.Room, error) {
 
 	rooms, err := rs.roomRepository.AllRooms(ctx)
 	if err != nil {
