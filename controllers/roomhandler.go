@@ -118,7 +118,8 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value(entities.UseridKeyValue).(int)
+	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
+	userId, _ := strconv.Atoi(userID)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
@@ -127,8 +128,8 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 
 	var room entities.Room
 	var input struct {
-		Cost   *string `json:"cost"`
-		Status *string `json:"status"`
+		Cost   *float64 `json:"cost"`
+		Status *string  `json:"status"`
 	}
 
 	err = utils.SerializeJSON(w, r, &input)
@@ -146,7 +147,9 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 		room.Status = *input.Status
 	}
 
-	err = b.roomService.UpdateARoom(ctx, room, roomId, userID)
+	entities.MessageLogs.InfoLog.Println("room_to_update", &room)
+
+	err = b.roomService.UpdateARoom(ctx, &room, roomId, userId)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err.Error())
@@ -154,7 +157,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	err = utils.DeserializeJSON(w, http.StatusOK, map[string]interface{}{"data": room})
+	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"msg": "room updated"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err.Error())
@@ -174,14 +177,15 @@ func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value(entities.UseridKeyValue).(int)
+	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
 		return
 	}
 
-	err = b.roomService.DeleteARoom(ctx, roomId, userID)
+	id, _ := strconv.Atoi(userID)
+	err = b.roomService.DeleteARoom(ctx, roomId, id)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err.Error())
