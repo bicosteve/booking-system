@@ -7,6 +7,10 @@ import (
 	"github.com/bicosteve/booking-system/entities"
 )
 
+type SMSRepository interface {
+	AddSMSOutbox(ctx context.Context, msg entities.SMSPayload) error
+}
+
 func (r *Repository) AddSMSOutbox(ctx context.Context, msg entities.SMSPayload) error {
 	q := `INSERT INTO sms_outbox(msg, user_id) VALUES(?,?)`
 

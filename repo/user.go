@@ -19,14 +19,6 @@ type UserRepository interface {
 	InsertPasswordResetToken(ctx context.Context, resetToken string, userId int) error
 }
 
-// 2. UserDBRepository implements UserRepository interface for mysql
-
-// 3. NewUserDBRepository creates a new instance of UserDBRepository
-func NewDBRepository(db *sql.DB) *Repository {
-	return &Repository{db: db}
-}
-
-// 4. Creates a user into the db
 func (r *Repository) CreateUser(ctx context.Context, user entities.UserPayload) error {
 	requestID := ctx.Value("request_id")
 	q := `
@@ -76,10 +68,7 @@ func (r *Repository) FindUserByEmail(ctx context.Context, email string) (bool, e
 
 	defer stmt.Close()
 
-	entities.MessageLogs.ErrorLog.Println(stmt)
-
 	row := stmt.QueryRowContext(ctx, email)
-
 	err = row.Scan(&count)
 	if err != nil {
 		if err == sql.ErrNoRows {

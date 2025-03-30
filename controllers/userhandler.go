@@ -40,7 +40,7 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"msg": "success"})
+	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]string{"msg": "success"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err)

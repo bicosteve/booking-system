@@ -41,6 +41,7 @@ type Base struct {
 	atklng        string
 	appusername   string
 	userService   *service.UserService
+	roomService   *service.RoomService
 }
 
 func (b *Base) Init() {
@@ -123,9 +124,15 @@ func (b *Base) Init() {
 	b.Topic = authTopic
 	b.Key = authKey
 
+	// Initializing user repo
 	userRepository := repo.NewDBRepository(b.DB)
 	userService := service.NewUserService(*userRepository)
 	b.userService = userService
+
+	// Initializing room repo
+	roomRepository := repo.NewDBRepository(b.DB)
+	roomService := service.NewRoomService(*roomRepository)
+	b.roomService = roomService
 
 	entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
 
@@ -173,6 +180,7 @@ func (b *Base) userRouter() http.Handler {
 	// Public Routes
 	r.Post(b.path+"/user/register", b.RegisterHandler)
 	r.Post(b.path+"/user/login", b.LoginHandler)
+	r.Get(b.path+"/user/rooms", b.FindRoomHandler)
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
@@ -191,6 +199,15 @@ func (b *Base) adminRouter() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
+
+	router.Route(b.path, func(r chi.Router) {
+		r.Use(utils.AuthMiddleware(b.jwtSecret))
+		r.Use(utils.AdminMiddlware)
+		r.Post("/admin/rooms", b.CreateRoomHandler)
+		r.Put("/admin/rooms/{room_id}", b.UpdateARoom)
+		r.Delete("/admin/rooms/{room_id}", b.DeleteARoom)
+
+	})
 
 	return router
 
