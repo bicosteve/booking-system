@@ -220,3 +220,18 @@ type Filters struct {
 	PageSize int
 	Sort     string
 }
+
+type BookingPayload struct {
+	Days   int `json:"days"`
+	UserID int `json:"user_id,omitempty"`
+	RoomID int `json:"room_id"`
+}
+
+type Booking struct {
+	ID        int       `json:"id"`
+	Days      int       `json:"days"`
+	UserID    int       `json:"user_id"`
+	RoomID    int       `json:"room_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdateAt  time.Time `json:"updated_at"`
+}

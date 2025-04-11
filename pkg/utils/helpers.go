@@ -79,6 +79,10 @@ func ValidateRoom(data *entities.RoomPayload) error {
 	return nil
 }
 
+func ValidateBooking(data *entities.BookingPayload) error {
+	return nil
+}
+
 func GeneratePasswordHash(p string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {

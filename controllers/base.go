@@ -23,25 +23,26 @@ import (
 )
 
 type Base struct {
-	KafkaProducer *kafka.Producer
-	KafkaConsumer *kafka.Consumer
-	AuthPort      string
-	AdminPort     string
-	ConsumerPort  string
-	Broker        string
-	Topic         string
-	Key           string
-	DB            *sql.DB
-	Redis         *redis.Client
-	jwtSecret     string
-	contentType   string
-	path          string
-	sengridkey    string
-	mailfrom      string
-	atklng        string
-	appusername   string
-	userService   *service.UserService
-	roomService   *service.RoomService
+	KafkaProducer  *kafka.Producer
+	KafkaConsumer  *kafka.Consumer
+	AuthPort       string
+	AdminPort      string
+	ConsumerPort   string
+	Broker         string
+	Topic          string
+	Key            string
+	DB             *sql.DB
+	Redis          *redis.Client
+	jwtSecret      string
+	contentType    string
+	path           string
+	sengridkey     string
+	mailfrom       string
+	atklng         string
+	appusername    string
+	userService    *service.UserService
+	roomService    *service.RoomService
+	bookingService *service.BookingService
 }
 
 func (b *Base) Init() {
@@ -134,6 +135,11 @@ func (b *Base) Init() {
 	roomService := service.NewRoomService(*roomRepository)
 	b.roomService = roomService
 
+	// Initialize booking repo
+	bookingRepository := repo.NewDBRepository(b.DB)
+	bookingService := service.NewBookingService(*bookingRepository)
+	b.bookingService = bookingService
+
 	entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
 
 }
@@ -188,6 +194,7 @@ func (b *Base) userRouter() http.Handler {
 		r.Get("/user/me", b.ProfileHandler)
 		r.Post("/user/reset", b.GenerateResetTokenHandler)
 		r.Post("/user/password-reset", b.ResetPasswordHandler)
+		r.Post("/user/book", b.BookingHandler)
 
 	})
 
