@@ -77,7 +77,7 @@ func TestSubmitMessage(t *testing.T) {
 			service := NewUserService(repository)
 
 			// Execute the function
-			err = service.SubmitMessage(context.Background(), db, tt.message)
+			err = service.SubmitMessage(context.Background(), tt.message)
 
 			// Check if the error matches our expectation
 			if tt.wantErr {

@@ -24,8 +24,6 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("payload %+v", payload)
-
 	err = utils.ValidateUser(payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
@@ -195,7 +193,7 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 		Message: tkn,
 	}
 
-	err = b.userService.SubmitMessage(ctx, b.DB, msg)
+	err = b.userService.SubmitMessage(ctx, msg)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		entities.MessageLogs.ErrorLog.Println(err)
