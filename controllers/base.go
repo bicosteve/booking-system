@@ -194,7 +194,10 @@ func (b *Base) userRouter() http.Handler {
 		r.Get("/user/me", b.ProfileHandler)
 		r.Post("/user/reset", b.GenerateResetTokenHandler)
 		r.Post("/user/password-reset", b.ResetPasswordHandler)
-		r.Post("/user/book", b.BookingHandler)
+		r.Post("/user/book", b.CreateBookingHandler)
+		r.Get("/user/book/{booking_id}", b.GetBookingHandler)
+		r.Get("/user/book/all", b.GetAllBookingsHandler)
+		r.Put("/user/book/{booking_id}", b.UpdateBooking)
 
 	})
 
@@ -213,6 +216,8 @@ func (b *Base) adminRouter() http.Handler {
 		r.Post("/admin/rooms", b.CreateRoomHandler)
 		r.Put("/admin/rooms/{room_id}", b.UpdateARoom)
 		r.Delete("/admin/rooms/{room_id}", b.DeleteARoom)
+		r.Get("/admin/book/all", b.GetAllAdminBookingsHandler)
+		r.Delete("/admin/book/{booking_id}/{room_id}", b.DeleteBooking)
 
 	})
 

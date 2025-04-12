@@ -12,8 +12,8 @@ type BookingRepository interface {
 	GetABooking(ctx context.Context, bookingID, userId int) (*entities.Booking, error)
 	GetUserBookings(ctx context.Context, userID int) ([]*entities.Booking, error)
 	GetVendorBookings(ctx context.Context, vendorID int) ([]*entities.Booking, error)
-	UpdateABooking(ctx context.Context, data entities.Booking, bookingId, userId int) error
-	DeleteABooking(ctx context.Context, bookingId, userId int) error
+	UpdateABooking(ctx context.Context, data *entities.BookingPayload, bookingID int) error
+	DeleteABooking(ctx context.Context, bookingID, vendorID, roomID int) error
 }
 
 func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPayload) error {
@@ -141,9 +141,10 @@ func (r *Repository) GetUserBookings(ctx context.Context, userID int) ([]*entiti
 }
 
 func (r *Repository) GetVendorBookings(ctx context.Context, vendorID int) ([]*entities.Booking, error) {
-	q := `SELECT * FROM booking INNER JOIN room 
-			WHERE booking.room_id = room.room_id 
-			AND room.vender_id = user_id = ?`
+	q := `SELECT b.booking_id, b.days, b.user_id, b.room_id, r.vender_id,
+				b.created_at, b.updated_at
+			FROM booking b JOIN room r ON b.room_id = r.room_id 
+			WHERE r.vender_id = ?`
 
 	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
@@ -163,7 +164,7 @@ func (r *Repository) GetVendorBookings(ctx context.Context, vendorID int) ([]*en
 
 	for rows.Next() {
 		var booking entities.Booking
-		err = rows.Scan(&booking.ID, &booking.Days, &booking.UserID, &booking.RoomID, &booking.CreatedAt, &booking.UpdateAt)
+		err = rows.Scan(&booking.ID, &booking.Days, &booking.UserID, &booking.RoomID, &booking.VenderID, &booking.CreatedAt, &booking.UpdateAt)
 
 		if err != nil {
 			return nil, err
@@ -199,20 +200,42 @@ func (r *Repository) UpdateABooking(ctx context.Context, data *entities.BookingP
 	return nil
 }
 
-func (r *Repository) DeleteABooking(ctx context.Context, bookingID, userID, roomID int) error {
-
-	q := `DELETE FROM booking WHERE booking_id = ? AND user_id = ?`
-
-	stmt, err := r.db.PrepareContext(ctx, q)
+func (r *Repository) DeleteABooking(ctx context.Context, bookingID, vendorID, roomID int) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	defer stmt.Close()
+	defer tx.Rollback()
 
-	_, err = stmt.ExecContext(ctx, bookingID, userID)
+	room_query := `UPDATE room SET status = 'VACANT' 
+					WHERE room_id = ? and vender_id = ?`
+
+	booking_query := `DELETE FROM booking WHERE booking_id = ?`
+	room_stmt, err := r.db.PrepareContext(ctx, room_query)
+	if err != nil {
+		return err
+	}
+	defer room_stmt.Close()
+
+	booking_stmt, err := r.db.PrepareContext(ctx, booking_query)
+	if err != nil {
+		return err
+	}
+	defer booking_stmt.Close()
+
+	_, err = room_stmt.ExecContext(ctx, roomID, vendorID)
 	if err != nil {
 		return nil
+	}
+
+	_, err = booking_stmt.ExecContext(ctx, bookingID)
+	if err != nil {
+		return nil
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 
 	return nil

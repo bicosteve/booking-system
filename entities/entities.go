@@ -224,7 +224,7 @@ type Filters struct {
 type BookingPayload struct {
 	Days   int `json:"days"`
 	UserID int `json:"user_id,omitempty"`
-	RoomID int `json:"room_id"`
+	RoomID int `json:"room_id,omitempty"`
 }
 
 type Booking struct {
@@ -232,6 +232,7 @@ type Booking struct {
 	Days      int       `json:"days"`
 	UserID    int       `json:"user_id"`
 	RoomID    int       `json:"room_id"`
+	VenderID  int       `json:"vender_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdateAt  time.Time `json:"updated_at"`
 }
