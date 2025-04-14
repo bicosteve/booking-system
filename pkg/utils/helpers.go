@@ -278,3 +278,28 @@ func ValidateFilters(f entities.Filters) error {
 
 	return nil
 }
+
+func FindRoomByID(rooms []*entities.Room, targetID string) (*entities.Room, bool) {
+	for _, item := range rooms {
+		if item.ID == targetID {
+			return item, true
+		}
+	}
+	return &entities.Room{}, false
+}
+
+func FindRoomByStatus(rooms []*entities.Room, status string) ([]*entities.Room, bool) {
+	var _rooms []*entities.Room
+	if status != "VACANT" && status != "BOOKED" {
+		return nil, false
+	}
+
+	for _, room := range rooms {
+		if room.Status == status {
+			_rooms = append(_rooms, room)
+			return _rooms, true
+		}
+	}
+
+	return nil, false
+}

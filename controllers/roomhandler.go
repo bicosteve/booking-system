@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -82,52 +81,30 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filter by room ID
-
 	if roomId != "" {
-		id, err := strconv.Atoi(roomId)
-		if err != nil {
-			utils.ErrorJSON(w, errors.New(err.Error()), http.StatusBadRequest)
-			entities.MessageLogs.ErrorLog.Println(err.Error())
+		room, found := utils.FindRoomByID(rooms, roomId)
+		if found {
+			_ = utils.DeserializeJSON(w, http.StatusOK, room)
 			return
 		}
 
-		for _, room := range rooms {
-			// room_id, _ := strconv.Atoi(room.ID)
-
-			if room.ID == roomId {
-				fmt.Println("Room ID from server ---->", room.ID)
-				fmt.Println("Room ID from client ---->", id)
-				_ = utils.DeserializeJSON(w, http.StatusOK, room)
-				return
-			} else {
-				utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
-				entities.MessageLogs.ErrorLog.Println("room not found")
-				return
-			}
-
-		}
+		utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
+		entities.MessageLogs.ErrorLog.Println("room not found")
+		return
 
 	}
 
-	// Filter by room status
-
-	fmt.Println(status)
-
 	if status != "" {
-		if status != "VACANT" || status != "BOOKED" {
-			utils.ErrorJSON(w, errors.New("filter option provided is not known"))
-			entities.MessageLogs.ErrorLog.Println("filter option provided is not known")
+		rooms, found := utils.FindRoomByStatus(rooms, status)
+		if found {
+			_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
 			return
 		}
 
-		for _, room := range rooms {
-			if room.Status == status {
-				_ = utils.DeserializeJSON(w, http.StatusOK, room)
-				return
-			}
+		utils.ErrorJSON(w, errors.New("error: room status provided not found"), http.StatusNotFound)
+		entities.MessageLogs.ErrorLog.Println("room not found")
+		return
 
-		}
 	}
 
 	_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
