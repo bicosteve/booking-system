@@ -30,6 +30,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	updateRoomSTM, err := tx.PrepareContext(ctx, updateQuery)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 
@@ -40,6 +41,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	insertRoomSTM, err := tx.PrepareContext(ctx, insertQuery)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 
@@ -47,6 +49,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	updateResult, err := updateRoomSTM.ExecContext(ctx, data.RoomID)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 
@@ -77,6 +80,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	err = tx.Commit()
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 
@@ -214,27 +218,32 @@ func (r *Repository) DeleteABooking(ctx context.Context, bookingID, vendorID, ro
 	booking_query := `DELETE FROM booking WHERE booking_id = ?`
 	room_stmt, err := r.db.PrepareContext(ctx, room_query)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 	defer room_stmt.Close()
 
 	booking_stmt, err := r.db.PrepareContext(ctx, booking_query)
 	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 	defer booking_stmt.Close()
 
 	_, err = room_stmt.ExecContext(ctx, roomID, vendorID)
 	if err != nil {
+		_ = tx.Rollback()
 		return nil
 	}
 
 	_, err = booking_stmt.ExecContext(ctx, bookingID)
 	if err != nil {
+		_ = tx.Rollback()
 		return nil
 	}
 
 	if err := tx.Commit(); err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 

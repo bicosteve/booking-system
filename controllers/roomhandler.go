@@ -72,6 +72,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	roomId := r.URL.Query().Get("room_id")
+	status := r.URL.Query().Get("status")
 
 	rooms, err := b.roomService.FindRooms(ctx)
 	if err != nil {
@@ -81,25 +82,28 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if roomId != "" {
-		id, err := strconv.Atoi(roomId)
-		if err != nil {
-			utils.ErrorJSON(w, errors.New(err.Error()), http.StatusBadRequest)
-			entities.MessageLogs.ErrorLog.Println(err.Error())
+		room, found := utils.FilterRoomByID(rooms, roomId)
+		if found {
+			_ = utils.DeserializeJSON(w, http.StatusOK, room)
 			return
 		}
 
-		for _, room := range rooms {
-			room_id, _ := strconv.Atoi(room.ID)
-			if room_id == id {
-				_ = utils.DeserializeJSON(w, http.StatusOK, room)
-				return
-			} else {
-				utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
-				entities.MessageLogs.ErrorLog.Println("room not found")
-				return
-			}
+		utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
+		entities.MessageLogs.ErrorLog.Println("room not found")
+		return
 
+	}
+
+	if status != "" {
+		rooms, found := utils.FilterRoomByStatus(rooms, status)
+		if found {
+			_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
+			return
 		}
+
+		utils.ErrorJSON(w, errors.New("error: room status provided not found"), http.StatusNotFound)
+		entities.MessageLogs.ErrorLog.Println("room not found")
+		return
 
 	}
 
