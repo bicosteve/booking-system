@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -72,6 +73,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	roomId := r.URL.Query().Get("room_id")
+	status := r.URL.Query().Get("status")
 
 	rooms, err := b.roomService.FindRooms(ctx)
 	if err != nil {
@@ -79,6 +81,8 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		entities.MessageLogs.ErrorLog.Println(err.Error())
 		return
 	}
+
+	// Filter by room ID
 
 	if roomId != "" {
 		id, err := strconv.Atoi(roomId)
@@ -89,8 +93,11 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, room := range rooms {
-			room_id, _ := strconv.Atoi(room.ID)
-			if room_id == id {
+			// room_id, _ := strconv.Atoi(room.ID)
+
+			if room.ID == roomId {
+				fmt.Println("Room ID from server ---->", room.ID)
+				fmt.Println("Room ID from client ---->", id)
 				_ = utils.DeserializeJSON(w, http.StatusOK, room)
 				return
 			} else {
@@ -101,6 +108,26 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 		}
 
+	}
+
+	// Filter by room status
+
+	fmt.Println(status)
+
+	if status != "" {
+		if status != "VACANT" || status != "BOOKED" {
+			utils.ErrorJSON(w, errors.New("filter option provided is not known"))
+			entities.MessageLogs.ErrorLog.Println("filter option provided is not known")
+			return
+		}
+
+		for _, room := range rooms {
+			if room.Status == status {
+				_ = utils.DeserializeJSON(w, http.StatusOK, room)
+				return
+			}
+
+		}
 	}
 
 	_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
