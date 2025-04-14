@@ -12,51 +12,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func SendMessageToKafka(broker, topic, key string, data any) error {
-	wg := &sync.WaitGroup{}
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": broker,
-		"acks":              "all",
-	})
-
-	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
-		return errors.New(err.Error())
-	}
-
-	defer p.Close()
-	defer p.Flush(15 * 1000)
-
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
-		for e := range p.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					entities.MessageLogs.ErrorLog.Printf("Message not delivered because of %v\n ", ev.TopicPartition)
-				} else {
-					entities.MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
-
-				}
-			}
-		}
-		w.Done()
-	}(wg)
-
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Key:            []byte(key),
-		Value:          []byte(string(dataBytes)),
-	}, nil)
-
-	return nil
-}
-
 func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 
 	sigs := make(chan os.Signal, 1)
@@ -107,4 +62,49 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	entities.MessageLogs.InfoLog.Println("CONSUMER: connected successfully")
 
 	return c, nil
+}
+
+func QPublishMessages(broker, topic, key string, data any) error {
+	wg := &sync.WaitGroup{}
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": broker,
+		"acks":              "all",
+	})
+
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		return errors.New(err.Error())
+	}
+
+	defer p.Flush(15 * 1000)
+	defer p.Close()
+
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		for e := range p.Events() {
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					entities.MessageLogs.ErrorLog.Printf("Message not delivered because of %v\n ", ev.TopicPartition)
+				} else {
+					entities.MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
+
+				}
+			}
+		}
+		w.Done()
+	}(wg)
+
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	p.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		Key:            []byte(key),
+		Value:          []byte(string(dataBytes)),
+	}, nil)
+
+	return nil
 }

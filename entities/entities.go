@@ -113,6 +113,8 @@ type SecretConfig struct {
 	MailFrom       string `toml:"mailfrom"`
 	AfricasTalking string `toml:"atklng"`
 	AppUsername    string `toml:"appusername"`
+	PPClientID     string `toml:"pp_clientid"`
+	PPSecret       string `toml:"pp_secret"`
 }
 
 type UserPayload struct {

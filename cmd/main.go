@@ -16,7 +16,7 @@ func main() {
 	wg.Add(3)
 	go base.AdminServer(&wg, "7002", "admin")
 	go base.UserServer(&wg, "7001", "user")
-	go base.AuthConsumer(&wg)
+	go base.PaymentConsumer(&wg)
 
 	defer base.DB.Close()
 

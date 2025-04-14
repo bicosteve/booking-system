@@ -12,7 +12,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func (b *Base) AuthConsumer(wg *sync.WaitGroup) {
+func (b *Base) PaymentConsumer(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	consumer := b.KafkaConsumer
