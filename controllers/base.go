@@ -43,6 +43,8 @@ type Base struct {
 	userService    *service.UserService
 	roomService    *service.RoomService
 	bookingService *service.BookingService
+	pp_clientid    string
+	pp_secret      string
 }
 
 func (b *Base) Init() {
@@ -115,6 +117,8 @@ func (b *Base) Init() {
 		b.mailfrom = s.MailFrom
 		b.atklng = s.AfricasTalking
 		b.appusername = s.AppUsername
+		b.pp_clientid = s.PPClientID
+		b.pp_secret = s.PPSecret
 	}
 
 	b.AuthPort = strconv.Itoa(port)
