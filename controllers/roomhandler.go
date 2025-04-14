@@ -82,7 +82,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if roomId != "" {
-		room, found := utils.FindRoomByID(rooms, roomId)
+		room, found := utils.FilterRoomByID(rooms, roomId)
 		if found {
 			_ = utils.DeserializeJSON(w, http.StatusOK, room)
 			return
@@ -95,7 +95,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if status != "" {
-		rooms, found := utils.FindRoomByStatus(rooms, status)
+		rooms, found := utils.FilterRoomByStatus(rooms, status)
 		if found {
 			_ = utils.DeserializeJSON(w, http.StatusOK, rooms)
 			return

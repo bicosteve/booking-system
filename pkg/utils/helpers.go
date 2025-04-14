@@ -279,7 +279,7 @@ func ValidateFilters(f entities.Filters) error {
 	return nil
 }
 
-func FindRoomByID(rooms []*entities.Room, targetID string) (*entities.Room, bool) {
+func FilterRoomByID(rooms []*entities.Room, targetID string) (*entities.Room, bool) {
 	for _, item := range rooms {
 		if item.ID == targetID {
 			return item, true
@@ -288,7 +288,7 @@ func FindRoomByID(rooms []*entities.Room, targetID string) (*entities.Room, bool
 	return &entities.Room{}, false
 }
 
-func FindRoomByStatus(rooms []*entities.Room, status string) ([]*entities.Room, bool) {
+func FilterRoomByStatus(rooms []*entities.Room, status string) ([]*entities.Room, bool) {
 	var _rooms []*entities.Room
 	if status != "VACANT" && status != "BOOKED" {
 		return nil, false
