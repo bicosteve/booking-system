@@ -64,7 +64,7 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	return c, nil
 }
 
-func QPublishMessages(broker, topic, key string, data any) error {
+func QPublishMessage(broker, topic, key string, data any) error {
 	wg := &sync.WaitGroup{}
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": broker,

@@ -51,6 +51,19 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	payment := entities.TransactionPayload{
+		RoomID: payload.RoomID,
+		UserID: userid,
+		Amount: payload.Amount,
+	}
+
+	err = utils.QPublishMessage(b.Broker, b.Topic, b.Key, payment)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
 	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "created"})
 
 }

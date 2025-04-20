@@ -224,9 +224,10 @@ type Filters struct {
 }
 
 type BookingPayload struct {
-	Days   int `json:"days"`
-	UserID int `json:"user_id,omitempty"`
-	RoomID int `json:"room_id,omitempty"`
+	Days   int     `json:"days"`
+	UserID int     `json:"user_id,omitempty"`
+	RoomID int     `json:"room_id,omitempty"`
+	Amount float64 `json:"amount,omitempty"`
 }
 
 type Booking struct {
@@ -237,4 +238,19 @@ type Booking struct {
 	VenderID  int       `json:"vender_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdateAt  time.Time `json:"updated_at"`
+}
+
+type TransactionPayload struct {
+	RoomID int     `json:"room_id"`
+	UserID int     `json:"user_id"`
+	Amount float64 `json:"amount"`
+}
+
+type Transaction struct {
+	ID        int       `json:"id"`
+	RoomID    int       `json:"room_id"`
+	UserID    int       `json:"user_id"`
+	Amount    float64   `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
