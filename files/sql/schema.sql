@@ -42,6 +42,7 @@ CREATE TABLE `transaction`(
     `transaction_id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `room_id` BIGINT NOT NULL, 
     `user_id` BIGINT NOT NULL, 
+    `amount` DECIMAL(10,2) NOT NULL, 
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(user_id),
