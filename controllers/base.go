@@ -51,8 +51,10 @@ func (b *Base) Init() {
 	startTime := time.Now()
 	ctx := context.Background()
 	var brokerURL string
-	var authKey string
-	var authTopic string
+	// var authKey string
+	// var authTopic string
+	var paymentKey string
+	var paymentTopic string
 	var port int
 	var adminport int
 
@@ -63,8 +65,10 @@ func (b *Base) Init() {
 
 	for _, kafka := range config.Kafka {
 		brokerURL = kafka.Broker
-		authKey = kafka.Key
-		authTopic = kafka.Topic
+		// authKey = kafka.Key
+		// authTopic = kafka.Topic
+		paymentKey = kafka.Key
+		paymentTopic = kafka.Topic
 
 	}
 
@@ -126,8 +130,8 @@ func (b *Base) Init() {
 	b.KafkaProducer = p
 	b.KafkaConsumer = c
 	b.Broker = brokerURL
-	b.Topic = authTopic
-	b.Key = authKey
+	b.Topic = paymentTopic
+	b.Key = paymentKey
 
 	// Initializing user repo
 	userRepository := repo.NewDBRepository(b.DB)
