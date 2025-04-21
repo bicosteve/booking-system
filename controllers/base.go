@@ -45,6 +45,7 @@ type Base struct {
 	bookingService *service.BookingService
 	pp_clientid    string
 	pp_secret      string
+	stripesecret   string
 }
 
 func (b *Base) Init() {
@@ -123,6 +124,7 @@ func (b *Base) Init() {
 		b.appusername = s.AppUsername
 		b.pp_clientid = s.PPClientID
 		b.pp_secret = s.PPSecret
+		b.stripesecret = s.StripeSecret
 	}
 
 	b.AuthPort = strconv.Itoa(port)

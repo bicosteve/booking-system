@@ -3,11 +3,13 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/stripe"
 	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/go-chi/chi/v5"
 )
@@ -51,20 +53,37 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payment := entities.TransactionPayload{
+	// payment := entities.TransactionPayload{
+	// 	RoomID: payload.RoomID,
+	// 	UserID: userid,
+	// 	Amount: payload.Amount,
+	// }
+
+	payDetails := entities.TRXPayload{
 		RoomID: payload.RoomID,
-		UserID: userid,
-		Amount: payload.Amount,
+		Payment: entities.PaymentBody{
+			Amount:      int64(payload.Amount),
+			Currency:    "usd",
+			Customer:    strconv.Itoa(payload.UserID),
+			Description: fmt.Sprintf("booking_%d", payload.RoomID),
+		},
 	}
 
-	err = utils.QPublishMessage(b.Broker, b.Topic, b.Key, payment)
+	status, err := stripe.MakeAPIPayments(b.stripesecret, payDetails)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "created"})
+	err = utils.QPublishMessage(b.Broker, b.Topic, b.Key, payDetails)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "created", "trx_status": status})
 
 }
 
