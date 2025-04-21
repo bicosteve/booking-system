@@ -115,6 +115,7 @@ type SecretConfig struct {
 	AppUsername    string `toml:"appusername"`
 	PPClientID     string `toml:"pp_clientid"`
 	PPSecret       string `toml:"pp_secret"`
+	StripeSecret   string `toml:"stripesecret"`
 }
 
 type UserPayload struct {
@@ -246,6 +247,11 @@ type TransactionPayload struct {
 	Amount float64 `json:"amount"`
 }
 
+type TRXPayload struct {
+	RoomID  int         `json:"room_id"`
+	Payment PaymentBody `json:"payment"`
+}
+
 type Transaction struct {
 	ID        int       `json:"id"`
 	RoomID    int       `json:"room_id"`
@@ -253,4 +259,11 @@ type Transaction struct {
 	Amount    float64   `json:"amount"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type PaymentBody struct {
+	Amount      int64  `json:"amount"`
+	Currency    string `json:"currency"`
+	Customer    string `json:"customer"`
+	Description string `json:"description"`
 }

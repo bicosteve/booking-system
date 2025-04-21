@@ -20,6 +20,7 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 	go func() {
 		<-sigs
 		entities.MessageLogs.InfoLog.Printf("PRODUCER: Received termination signal. Exiting")
+		os.Exit(1)
 
 	}()
 
@@ -45,6 +46,7 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	go func() {
 		<-sigs
 		entities.MessageLogs.InfoLog.Printf("CONSUMER: Received termination signal. Exiting")
+		os.Exit(1)
 
 	}()
 

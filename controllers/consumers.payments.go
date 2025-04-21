@@ -35,6 +35,7 @@ func (b *Base) PaymentConsumer(wg *sync.WaitGroup) {
 	go func() {
 		<-sigchan
 		cancel()
+		os.Exit(1)
 	}()
 
 	for {
