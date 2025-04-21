@@ -1,0 +1,71 @@
+[app]
+developer = ""
+enable = true
+id = "booking-system.api"
+name = "booking system app"
+version = "1.0"
+
+[logger]
+file = "booking-system.log" 
+handler = "json" 
+level = "debug" 
+path = "./logs" 
+writer = "both" #(pass in file, out or both)
+
+# local mysql 
+[[mysql]]
+host = "127.0.0.1"
+name = "mysql"
+password = ""
+port = 3306
+schema = "bookings"
+username = ""
+
+# redis configs
+[[redis]]
+address = "127.0.0.1"
+database = 0
+name = "redis"
+password = ""
+port = "6379"
+
+[[kafka]]
+broker = "localhost:19092"
+key = "pay"
+name = 'kafka'
+topic = "payments"
+
+[[http]]
+adminport = 7002
+args = {disableAuth = false}
+contenttype = "application/json"
+cors = {allowed_method = [
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "OPTIONS",
+], allowed_header = [
+  "Accept",
+  "Accept-Language",
+  "Content-Type",
+  "Content-Language",
+  "Origin",
+], allowed_origin = [
+  "*",
+]}
+host = "0.0.0.0"
+name = "main"
+path = "/api"
+port = 7001
+
+# secrets
+[[secrets]]
+appusername = "sandbox"
+atklng = ""
+jwt = ""
+mailfrom = ""
+name = "secrets"
+sendgrid = ""
+stripep = ""
+stripesecret = ""
