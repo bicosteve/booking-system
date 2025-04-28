@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/bicosteve/booking-system/entities"
 )
@@ -15,7 +14,7 @@ type PaymentRepository interface {
 }
 
 func (r *Repository) CreatePayment(ctx context.Context, p *entities.Payment) error {
-	key := fmt.Sprintf("user:%d:%d", p.UserID, time.Now().Second())
+	key := fmt.Sprintf("user:%d", p.UserID)
 	err := r.cache.HSet(ctx, key, map[string]any{
 		"UserId":     p.UserID,
 		"Amount":     p.Amount,
@@ -31,9 +30,7 @@ func (r *Repository) CreatePayment(ctx context.Context, p *entities.Payment) err
 }
 
 func (r *Repository) FindPayment(ctx context.Context, userId string) (entities.Payment, error) {
-
 	key := fmt.Sprintf("user:%s", userId)
-
 	res, err := r.cache.HGetAll(ctx, key).Result()
 	if err != nil {
 		return entities.Payment{}, err
