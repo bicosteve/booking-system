@@ -6,11 +6,11 @@ name = "booking system app"
 version = "1.0"
 
 [logger]
-file = "booking-system.log" 
-handler = "json" 
-level = "debug" 
-path = "./logs" 
-writer = "both" #(pass in file, out or both)
+file = "booking-system.log"
+handler = "json"
+level = "debug"
+path = "./logs"
+writer = "both"             #(pass in file, out or both)
 
 # local mysql 
 [[mysql]]
@@ -37,9 +37,9 @@ topic = "payments"
 
 [[http]]
 adminport = 7002
-args = {disableAuth = false}
+args = { disableAuth = false }
 contenttype = "application/json"
-cors = {allowed_method = [
+cors = { allowed_method = [
   "GET",
   "POST",
   "PUT",
@@ -53,7 +53,7 @@ cors = {allowed_method = [
   "Origin",
 ], allowed_origin = [
   "*",
-]}
+] }
 host = "0.0.0.0"
 name = "main"
 path = "/api"
@@ -69,3 +69,10 @@ name = "secrets"
 sendgrid = ""
 stripep = ""
 stripesecret = ""
+
+
+# URLs
+[[urls]]
+name = "urls"
+successURL = "http://host****/success"
+cancelURL = "http://host****/cancel"

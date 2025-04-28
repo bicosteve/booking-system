@@ -1,4 +1,4 @@
-package stripe
+package payments
 
 import (
 	"errors"
@@ -64,5 +64,11 @@ func (p payment) CreatePayment(amount float64, userId int, orderId int) (*stripe
 }
 
 func (p payment) GetPaymentStatus(paymentId string) (*stripe.CheckoutSession, error) {
-	return nil, nil
+	stripe.Key = p.stripeSecretKey
+	session, err := session.Get(paymentId, nil)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		return nil, errors.New("payment get session failed")
+	}
+	return session, nil
 }

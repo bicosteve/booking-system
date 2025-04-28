@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
-	"github.com/bicosteve/booking-system/pkg/stripe"
+	"github.com/bicosteve/booking-system/pkg/payments"
 	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/go-chi/chi/v5"
 )
@@ -46,6 +46,58 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	userid, _ := strconv.Atoi(userID)
 	payload.UserID = userid
 
+	payDetails := entities.TRXPayload{
+		RoomID: payload.RoomID,
+		UserID: userid,
+		Days:   payload.Days,
+		Payment: entities.PaymentBody{
+			Amount:      int64(payload.Amount),
+			Currency:    "kes",
+			Customer:    payload.UserID,
+			Description: fmt.Sprintf("booking_%d", payload.RoomID),
+		},
+	}
+
+	stripeConf := entities.StripeConfig{
+		StripeSecret: b.stripesecret,
+		Publishable:  b.pp_clientid,
+		SuccessURL:   b.successURL,
+		CancelURL:    b.cancelURL,
+	}
+
+	// 1. Check if there is an active payment session or create new payment session
+	active, err := b.paymentService.GetActivePayment(ctx, userID)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// 1b. If there is a payment in process return bad request
+	if active.Status == "initial" {
+		entities.MessageLogs.ErrorLog.Println("There is an active payment in waiting")
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+
+	}
+
+	// 2. Create Payment Session on Stripe Before Booking
+	session, err := payments.CreateStripePayment(stripeConf, payDetails)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Store Payments In Redis
+	err = b.paymentService.StorePayment(ctx, session, payDetails)
+	if err != nil {
+		entities.MessageLogs.ErrorLog.Println(err)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Make Booking
 	err = b.bookingService.MakeBooking(ctx, *payload)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -53,29 +105,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// payment := entities.TransactionPayload{
-	// 	RoomID: payload.RoomID,
-	// 	UserID: userid,
-	// 	Amount: payload.Amount,
-	// }
-
-	payDetails := entities.TRXPayload{
-		RoomID: payload.RoomID,
-		Payment: entities.PaymentBody{
-			Amount:      int64(payload.Amount),
-			Currency:    "usd",
-			Customer:    strconv.Itoa(payload.UserID),
-			Description: fmt.Sprintf("booking_%d", payload.RoomID),
-		},
-	}
-
-	status, err := stripe.MakeAPIPayments(b.stripesecret, payDetails)
-	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
-		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-
+	// 5. Publish booking payments
 	err = utils.QPublishMessage(b.Broker, b.Topic, b.Key, payDetails)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -83,7 +113,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "created", "trx_status": status})
+	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "booking created", "result": session, "payment_url": session.URL})
 
 }
 
