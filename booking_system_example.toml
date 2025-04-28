@@ -1,45 +1,52 @@
 [app]
-developer = ""
-enable = true
 id = "booking-system.api"
-name = "booking system app"
+enable = true
 version = "1.0"
+name = "booking system app"
+developer = ["bico.steve4@gmail.com"]
+
 
 [logger]
-file = "booking-system.log" 
-handler = "json" 
-level = "debug" 
-path = "./logs" 
-writer = "both" #(pass in file, out or both)
+path = "./logs"
+writer = "both"
+file = "booking-system.log"
+level = "debug"
+handler = "json"
+
 
 # local mysql 
 [[mysql]]
-host = "127.0.0.1"
 name = "mysql"
-password = ""
+host = "127.0.0.1"
 port = 3306
-schema = "bookings"
 username = ""
+password = ""
+schema = ""
+
 
 # redis configs
 [[redis]]
-address = "127.0.0.1"
-database = 0
 name = "redis"
+address = ""
 password = ""
-port = "6379"
+port = ""
+database = 0
+
 
 [[kafka]]
-broker = "localhost:19092"
-key = "pay"
 name = 'kafka'
-topic = "payments"
+broker = ""
+topic = ""
+key = ""
+
 
 [[http]]
+name = "main"
+host = "0.0.0.0"
+port = 7001
 adminport = 7002
-args = {disableAuth = false}
-contenttype = "application/json"
-cors = {allowed_method = [
+path = "/api"
+cors = { allowed_method = [
   "GET",
   "POST",
   "PUT",
@@ -53,19 +60,25 @@ cors = {allowed_method = [
   "Origin",
 ], allowed_origin = [
   "*",
-]}
-host = "0.0.0.0"
-name = "main"
-path = "/api"
-port = 7001
+] }
+args = { disableAuth = false }
+contenttype = "application/json"
+
 
 # secrets
 [[secrets]]
-appusername = "sandbox"
-atklng = ""
-jwt = ""
-mailfrom = ""
 name = "secrets"
+jwt = ""
 sendgrid = ""
-stripep = ""
+mailfrom = ""
+atklng = ""
+appusername = ""
+
+
+# Stripe
+[[stripe]]
+name = "stripe"
 stripesecret = ""
+publishable = ""
+successURL = "http://host**/success"
+cancelURL = "http://host**/cancel"

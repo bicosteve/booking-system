@@ -43,17 +43,17 @@ type Base struct {
 	userService    *service.UserService
 	roomService    *service.RoomService
 	bookingService *service.BookingService
+	paymentService *service.PaymentService
 	pp_clientid    string
-	pp_secret      string
 	stripesecret   string
+	successURL     string
+	cancelURL      string
 }
 
 func (b *Base) Init() {
 	startTime := time.Now()
 	ctx := context.Background()
 	var brokerURL string
-	// var authKey string
-	// var authTopic string
 	var paymentKey string
 	var paymentTopic string
 	var port int
@@ -66,8 +66,6 @@ func (b *Base) Init() {
 
 	for _, kafka := range config.Kafka {
 		brokerURL = kafka.Broker
-		// authKey = kafka.Key
-		// authTopic = kafka.Topic
 		paymentKey = kafka.Key
 		paymentTopic = kafka.Topic
 
@@ -116,15 +114,21 @@ func (b *Base) Init() {
 
 	}
 
-	for _, s := range config.Secrets {
-		b.jwtSecret = s.JWT
-		b.sengridkey = s.Sendgrid
-		b.mailfrom = s.MailFrom
-		b.atklng = s.AfricasTalking
-		b.appusername = s.AppUsername
-		b.pp_clientid = s.PPClientID
-		b.pp_secret = s.PPSecret
-		b.stripesecret = s.StripeSecret
+	for _, secret := range config.Secrets {
+		b.jwtSecret = secret.JWT
+		b.sengridkey = secret.Sendgrid
+		b.mailfrom = secret.MailFrom
+		b.atklng = secret.AfricasTalking
+		b.appusername = secret.AppUsername
+
+	}
+
+	for _, _stripe := range config.Stripe {
+		b.successURL = _stripe.SuccessURL
+		b.cancelURL = _stripe.CancelURL
+		b.pp_clientid = _stripe.Publishable
+		b.stripesecret = _stripe.StripeSecret
+
 	}
 
 	b.AuthPort = strconv.Itoa(port)
@@ -136,19 +140,24 @@ func (b *Base) Init() {
 	b.Key = paymentKey
 
 	// Initializing user repo
-	userRepository := repo.NewDBRepository(b.DB)
+	userRepository := repo.NewDBRepository(b.DB, b.Redis)
 	userService := service.NewUserService(*userRepository)
 	b.userService = userService
 
 	// Initializing room repo
-	roomRepository := repo.NewDBRepository(b.DB)
+	roomRepository := repo.NewDBRepository(b.DB, b.Redis)
 	roomService := service.NewRoomService(*roomRepository)
 	b.roomService = roomService
 
 	// Initialize booking repo
-	bookingRepository := repo.NewDBRepository(b.DB)
+	bookingRepository := repo.NewDBRepository(b.DB, b.Redis)
 	bookingService := service.NewBookingService(*bookingRepository)
 	b.bookingService = bookingService
+
+	// Initialize payment repo
+	paymentRepository := repo.NewDBRepository(b.DB, b.Redis)
+	paymentService := service.NewPaymentService(*paymentRepository)
+	b.paymentService = paymentService
 
 	entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
 
@@ -200,6 +209,7 @@ func (b *Base) userRouter() http.Handler {
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
+		// stripe.Key = b.stripesecret
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Get("/user/me", b.ProfileHandler)
 		r.Post("/user/reset", b.GenerateResetTokenHandler)
@@ -221,6 +231,7 @@ func (b *Base) adminRouter() http.Handler {
 	utils.SetCors(router)
 
 	router.Route(b.path, func(r chi.Router) {
+		// stripe.Key = b.stripesecret
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Use(utils.AdminMiddlware)
 		r.Post("/admin/rooms", b.CreateRoomHandler)

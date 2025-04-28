@@ -31,6 +31,7 @@ type Config struct {
 	Redis   []RedisConfig  `toml:"redis"`
 	Kafka   []KakfaConfig  `toml:"kafka"`
 	Secrets []SecretConfig `toml:"secrets"`
+	Stripe  []StripeConfig `toml:"stripe"`
 }
 
 type AppConfig struct {
@@ -89,6 +90,14 @@ type MysqlConfig struct {
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
 	Args     args   `toml:"args"`
+}
+
+type StripeConfig struct {
+	Name         string `toml:"name"`
+	StripeSecret string `toml:"stripesecret"`
+	Publishable  string `toml:"publishable"`
+	SuccessURL   string `toml:"successurl"`
+	CancelURL    string `toml:"cancelurl"`
 }
 
 type RedisConfig struct {
@@ -180,12 +189,75 @@ type SMSPayload struct {
 	Message string `json:"message"`
 }
 
-func BuildSMSPayload() *SMSPayload {
-	return &SMSPayload{
-		UserID:  "1",
-		Message: "test",
-	}
+type Filters struct {
+	Page     int
+	PageSize int
+	Sort     string
 }
+
+type BookingPayload struct {
+	Days   int     `json:"days"`
+	UserID int     `json:"user_id,omitempty"`
+	RoomID int     `json:"room_id,omitempty"`
+	Amount float64 `json:"amount,omitempty"`
+}
+
+type Booking struct {
+	ID        int       `json:"id"`
+	Days      int       `json:"days"`
+	UserID    int       `json:"user_id"`
+	RoomID    int       `json:"room_id"`
+	VenderID  int       `json:"vender_id,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdateAt  time.Time `json:"updated_at"`
+}
+
+type TRXPayload struct {
+	RoomID  int         `json:"room_id"`
+	UserID  int         `json:"user_id"`
+	Days    int         `json:"days"`
+	Payment PaymentBody `json:"payment"`
+}
+
+type PaymentBody struct {
+	Amount      int64  `json:"amount"`
+	Currency    string `json:"currency"`
+	Customer    int    `json:"customer"`
+	Description string `json:"description"`
+}
+
+type Transaction struct {
+	ID        int       `json:"id"`
+	RoomID    int       `json:"room_id"`
+	UserID    int       `json:"user_id"`
+	Amount    float64   `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type Payment struct {
+	ID            int       `json:"id"`
+	UserID        int       `json:"user_id"`
+	CaptureMethod string    `json:"capture_method"`
+	Amount        float64   `json:"amount"`
+	TransactionID int       `json:"transaction_id"`
+	CustomerId    string    `json:"customer_id"`
+	PaymentId     string    `json:"payment_id"`
+	Status        string    `json:"status"` // initial, success, failed
+	Response      string    `json:"response"`
+	PaymentUrl    string    `json:"payment_url"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// type PaymentStatus string
+
+// const (
+// 	PaymentStatusInitial PaymentStatus = "initial"
+// 	PaymentStatusSuccess PaymentStatus = "success"
+// 	PaymentStatusFailed  PaymentStatus = "failed"
+// 	PaymentStatusPending PaymentStatus = "pending"
+// )
 
 type args map[string]interface{}
 
@@ -217,53 +289,3 @@ const (
 	PhoneNumberKeyValue phoneNumber = "phonenumber"
 	UseridKeyValue      useridKey   = 0
 )
-
-type Filters struct {
-	Page     int
-	PageSize int
-	Sort     string
-}
-
-type BookingPayload struct {
-	Days   int     `json:"days"`
-	UserID int     `json:"user_id,omitempty"`
-	RoomID int     `json:"room_id,omitempty"`
-	Amount float64 `json:"amount,omitempty"`
-}
-
-type Booking struct {
-	ID        int       `json:"id"`
-	Days      int       `json:"days"`
-	UserID    int       `json:"user_id"`
-	RoomID    int       `json:"room_id"`
-	VenderID  int       `json:"vender_id,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdateAt  time.Time `json:"updated_at"`
-}
-
-type TransactionPayload struct {
-	RoomID int     `json:"room_id"`
-	UserID int     `json:"user_id"`
-	Amount float64 `json:"amount"`
-}
-
-type TRXPayload struct {
-	RoomID  int         `json:"room_id"`
-	Payment PaymentBody `json:"payment"`
-}
-
-type Transaction struct {
-	ID        int       `json:"id"`
-	RoomID    int       `json:"room_id"`
-	UserID    int       `json:"user_id"`
-	Amount    float64   `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type PaymentBody struct {
-	Amount      int64  `json:"amount"`
-	Currency    string `json:"currency"`
-	Customer    string `json:"customer"`
-	Description string `json:"description"`
-}
