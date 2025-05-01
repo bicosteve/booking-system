@@ -16,8 +16,8 @@ func (b *BookingService) MakeBooking(ctx context.Context, data entities.BookingP
 	return nil
 }
 
-func (b *BookingService) GetUserBooking(ctx context.Context, bookingID, userID int) (*entities.Booking, error) {
-	booking, err := b.bookingRepository.GetABooking(ctx, bookingID, userID)
+func (b *BookingService) GetUserBooking(ctx context.Context, roomID, userID int) (*entities.Booking, error) {
+	booking, err := b.bookingRepository.GetABooking(ctx, roomID, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -13,16 +13,18 @@ import (
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/repo"
 	"github.com/bicosteve/booking-system/service"
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 )
 
 func setupTestBase() (*Base, sqlmock.Sqlmock) {
 	db, mock, err := sqlmock.New()
+	_db, _ := redismock.NewClientMock()
 	if err != nil {
 		panic(err)
 	}
 
-	repository := *repo.NewDBRepository(db)
+	repository := *repo.NewDBRepository(db, _db)
 	userService := service.NewUserService(repository)
 	base := &Base{
 		userService: userService,

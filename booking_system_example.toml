@@ -79,6 +79,6 @@ appusername = ""
 [[stripe]]
 name = "stripe"
 stripesecret = ""
-publishable = ""
+pubkey = ""
 successURL = "http://host**/success"
 cancelURL = "http://host**/cancel"

@@ -80,6 +80,22 @@ func ValidateRoom(data *entities.RoomPayload) error {
 }
 
 func ValidateBooking(data *entities.BookingPayload) error {
+	if data.Days == nil {
+		return errors.New("days is required")
+	}
+
+	if data.UserID == nil {
+		return errors.New("user id is required")
+	}
+
+	if data.RoomID == nil {
+		return errors.New("room id is required")
+	}
+
+	if data.Amount == nil {
+		return errors.New("amount is required")
+	}
+
 	return nil
 }
 
