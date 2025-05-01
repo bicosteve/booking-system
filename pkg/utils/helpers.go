@@ -84,10 +84,6 @@ func ValidateBooking(data *entities.BookingPayload) error {
 		return errors.New("days is required")
 	}
 
-	if data.UserID == nil {
-		return errors.New("user id is required")
-	}
-
 	if data.RoomID == nil {
 		return errors.New("room id is required")
 	}

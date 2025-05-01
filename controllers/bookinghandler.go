@@ -76,15 +76,15 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1b. If there is a payment in process return active payment url
+	// 2. If there is an active payment i.e status='initial' --> client_secret,pub_key
 	if active.Status == "initial" {
 		entities.MessageLogs.InfoLog.Println("There is an active payment in waiting")
-		_ = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"message": "create payment", "client_secret": active.ClientSecret, "pub_key": b.pubkey})
+		_ = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"message": "You have an active payment,confirm payment to proceed", "client_secret": active.ClientSecret, "pub_key": b.pubkey})
 		return
 
 	}
 
-	// 2. Create Payment Session on Stripe Before Booking
+	// 3. Create Payment Session on Stripe Before Booking
 	PaymentSession, err := payments.CreateStripePayment(stripeConf, payDetails)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -92,7 +92,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Store Payments In Redis
+	// 4. Store Payments In Redis
 	err = b.paymentService.HoldPayment(ctx, PaymentSession, payDetails)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -100,7 +100,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Make Booking
+	// 5. Make Booking
 	err = b.bookingService.MakeBooking(ctx, *payload)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -108,7 +108,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 5. Publish booking payments
+	// 6. Publish booking payments
 	err = utils.QPublishMessage(b.Broker, b.Topic[0], b.Key, payDetails)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
@@ -116,6 +116,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 7. Return client_secret, pubkey, room_id
 	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "booking created", "pubkey": b.pubkey, "client_secret": PaymentSession.ClientSecret, "room_id": payload.RoomID})
 
 }

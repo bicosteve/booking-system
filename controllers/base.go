@@ -215,7 +215,7 @@ func (b *Base) userRouter() http.Handler {
 		r.Post("/user/reset", b.GenerateResetTokenHandler)
 		r.Post("/user/password-reset", b.ResetPasswordHandler)
 		r.Post("/user/book", b.CreateBookingHandler)
-		r.Get("/user/book/{room_id}", b.VerifyBookingHandler)
+		r.Get("/user/book/verify/{room_id}", b.VerifyBookingHandler)
 		r.Get("/user/book/{room_id}", b.GetBookingHandler)
 		r.Get("/user/book/all", b.GetAllBookingsHandler)
 		r.Put("/user/book/{booking_id}", b.UpdateBooking)
