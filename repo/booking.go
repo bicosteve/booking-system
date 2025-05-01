@@ -9,7 +9,7 @@ import (
 
 type BookingRepository interface {
 	CreateABooking(ctx context.Context, data entities.BookingPayload) error
-	GetABooking(ctx context.Context, bookingID, userId int) (*entities.Booking, error)
+	GetABooking(ctx context.Context, roomId, userId int) (*entities.Booking, error)
 	GetUserBookings(ctx context.Context, userID int) ([]*entities.Booking, error)
 	GetVendorBookings(ctx context.Context, vendorID int) ([]*entities.Booking, error)
 	UpdateABooking(ctx context.Context, data *entities.BookingPayload, bookingID int) error
@@ -36,8 +36,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	defer updateRoomSTM.Close()
 
-	insertQuery := `INSERT INTO booking(days,user_id,room_id,created_at, updated_at)
-			VALUES (?, ?, ?, NOW(), NOW())`
+	insertQuery := `INSERT INTO booking(days,user_id,room_id,created_at, updated_at,status=?)VALUES (?, ?, ?, NOW(), NOW(),?)`
 
 	insertRoomSTM, err := tx.PrepareContext(ctx, insertQuery)
 	if err != nil {
@@ -62,7 +61,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 		return fmt.Errorf("no room for room id %d or room not found", data.RoomID)
 	}
 
-	args := []any{data.Days, data.UserID, data.RoomID}
+	args := []interface{}{data.Days, data.UserID, data.RoomID, data.Status}
 
 	insertResult, err := insertRoomSTM.ExecContext(ctx, args...)
 	if err != nil {
@@ -87,8 +86,11 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 	return nil
 }
 
-func (r *Repository) GetABooking(ctx context.Context, bookingID, userId int) (*entities.Booking, error) {
-	q := `SELECT * FROM booking WHERE booking_id = ? AND user_id = ?`
+func (r *Repository) GetABooking(ctx context.Context, roomID, userId int) (*entities.Booking, error) {
+	q := `SELECT * FROM booking 
+			WHERE status = 0 
+			AND booking_id = ? AND user_id = ?
+			ORDER BY created_at DESC LIMIT 1`
 
 	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
@@ -99,7 +101,7 @@ func (r *Repository) GetABooking(ctx context.Context, bookingID, userId int) (*e
 
 	var booking entities.Booking
 
-	row := stmt.QueryRowContext(ctx, bookingID, userId)
+	row := stmt.QueryRowContext(ctx, roomID, userId)
 
 	err = row.Scan(&booking.ID, &booking.Days, &booking.UserID, &booking.RoomID, &booking.CreatedAt, &booking.UpdateAt)
 	if err != nil {
@@ -184,7 +186,7 @@ func (r *Repository) GetVendorBookings(ctx context.Context, vendorID int) ([]*en
 
 func (r *Repository) UpdateABooking(ctx context.Context, data *entities.BookingPayload, bookingID int) error {
 
-	q := `UPDATE booking SET days = ?, updated_at = NOW() 
+	q := `UPDATE booking SET days = ?, status = ?, updated_at = NOW() 
 			WHERE booking_id = ? AND user_id = ?`
 
 	stmt, err := r.db.PrepareContext(ctx, q)

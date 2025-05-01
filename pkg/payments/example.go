@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bicosteve/booking-system/entities"
-	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/checkout/session"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/paymentintent"
 )
 
 type PaymentClient interface {
-	CreatePayment(amount float64, userId, orderId int) (*stripe.CheckoutSession, error)
-	GetPaymentStatus(paymentId string) (*stripe.CheckoutSession, error)
+	CreatePayment(amount float64, userId, orderId int) (*stripe.PaymentIntent, error)
+	GetPaymentStatus(paymentId string) (*stripe.PaymentIntent, error)
 }
 
 type payment struct {
@@ -28,11 +28,20 @@ func NewPaymentClient(stripeSecretKey, successURL, cancelURL string) PaymentClie
 	}
 }
 
-func (p payment) CreatePayment(amount float64, userId int, orderId int) (*stripe.CheckoutSession, error) {
+func (p payment) CreatePayment(amount float64, userId int, orderId int) (*stripe.PaymentIntent, error) {
 
 	stripe.Key = p.stripeSecretKey
 	amountInCents := amount * 100
-	params := &stripe.CheckoutSessionParams{
+	_ = amountInCents
+
+	// Customize the checkout page
+	params := &stripe.PaymentIntentParams{
+		Amount:             stripe.Int64(int64(amountInCents)),
+		Currency:           stripe.String(string(stripe.CurrencyKES)),
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+	}
+
+	/*params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
@@ -50,25 +59,26 @@ func (p payment) CreatePayment(amount float64, userId int, orderId int) (*stripe
 		SuccessURL: stripe.String(p.successURL),
 		CancelURL:  stripe.String(p.cancelURL),
 	}
-
+	session, err := session.New(params) */
 	params.AddMetadata("order_id", fmt.Sprintf("%d", orderId))
 	params.AddMetadata("user_id", fmt.Sprintf("%d", userId))
 
-	session, err := session.New(params)
+	pi, err := paymentintent.New(params)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
-		return nil, errors.New("payment create session failed")
+		return nil, errors.New("payment create intent failed")
 	}
 
-	return session, nil
+	return pi, nil
 }
 
-func (p payment) GetPaymentStatus(paymentId string) (*stripe.CheckoutSession, error) {
+func (p payment) GetPaymentStatus(paymentId string) (*stripe.PaymentIntent, error) {
 	stripe.Key = p.stripeSecretKey
-	session, err := session.Get(paymentId, nil)
+	params := &stripe.PaymentIntentParams{}
+	result, err := paymentintent.Get(paymentId, params)
 	if err != nil {
 		entities.MessageLogs.ErrorLog.Println(err)
-		return nil, errors.New("payment get session failed")
+		return nil, errors.New("payment get paymentintent failed")
 	}
-	return session, nil
+	return result, nil
 }

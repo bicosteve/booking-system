@@ -29,7 +29,7 @@ type Base struct {
 	AdminPort      string
 	ConsumerPort   string
 	Broker         string
-	Topic          string
+	Topic          []string
 	Key            string
 	DB             *sql.DB
 	Redis          *redis.Client
@@ -44,10 +44,11 @@ type Base struct {
 	roomService    *service.RoomService
 	bookingService *service.BookingService
 	paymentService *service.PaymentService
-	pp_clientid    string
-	stripesecret   string
-	successURL     string
-	cancelURL      string
+	// pp_clientid    string
+	stripesecret string
+	pubkey       string
+	successURL   string
+	cancelURL    string
 }
 
 func (b *Base) Init() {
@@ -55,7 +56,7 @@ func (b *Base) Init() {
 	ctx := context.Background()
 	var brokerURL string
 	var paymentKey string
-	var paymentTopic string
+	var paymentTopic []string
 	var port int
 	var adminport int
 
@@ -67,7 +68,7 @@ func (b *Base) Init() {
 	for _, kafka := range config.Kafka {
 		brokerURL = kafka.Broker
 		paymentKey = kafka.Key
-		paymentTopic = kafka.Topic
+		paymentTopic = kafka.Topics
 
 	}
 
@@ -126,7 +127,7 @@ func (b *Base) Init() {
 	for _, _stripe := range config.Stripe {
 		b.successURL = _stripe.SuccessURL
 		b.cancelURL = _stripe.CancelURL
-		b.pp_clientid = _stripe.Publishable
+		b.pubkey = _stripe.PubKey
 		b.stripesecret = _stripe.StripeSecret
 
 	}
@@ -209,13 +210,13 @@ func (b *Base) userRouter() http.Handler {
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
-		// stripe.Key = b.stripesecret
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Get("/user/me", b.ProfileHandler)
 		r.Post("/user/reset", b.GenerateResetTokenHandler)
 		r.Post("/user/password-reset", b.ResetPasswordHandler)
 		r.Post("/user/book", b.CreateBookingHandler)
-		r.Get("/user/book/{booking_id}", b.GetBookingHandler)
+		r.Get("/user/book/verify/{room_id}", b.VerifyBookingHandler)
+		r.Get("/user/book/{room_id}", b.GetBookingHandler)
 		r.Get("/user/book/all", b.GetAllBookingsHandler)
 		r.Put("/user/book/{booking_id}", b.UpdateBooking)
 

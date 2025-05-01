@@ -9,6 +9,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/repo"
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,8 +87,10 @@ func TestSubmitRegistrationRequest(t *testing.T) {
 
 			defer db.Close()
 
+			_db, _ := redismock.NewClientMock()
+
 			tt.setupMock(mock)
-			repository := *repo.NewDBRepository(db)
+			repository := *repo.NewDBRepository(db, _db)
 			service := NewUserService(repository)
 
 			err = service.SubmitRegistrationRequest(context.Background(), tt.payload)
@@ -177,7 +180,9 @@ func TestSubmitLoginRequest(t *testing.T) {
 
 			tt.setupMock(mock)
 
-			repository := *repo.NewDBRepository(db)
+			_db, _ := redismock.NewClientMock()
+
+			repository := *repo.NewDBRepository(db, _db)
 			service := NewUserService(repository)
 
 			token, err := service.SubmitLoginRequest(context.Background(), tt.payload, tt.secret)
@@ -270,7 +275,9 @@ func TestSubmitProfileRequest(t *testing.T) {
 
 			tt.setupMock(mock)
 
-			repository := *repo.NewDBRepository(db)
+			_db, _ := redismock.NewClientMock()
+
+			repository := *repo.NewDBRepository(db, _db)
 			service := NewUserService(repository)
 
 			user, err := service.SubmitProfileRequest(context.Background(), tt.email)
@@ -347,9 +354,11 @@ func TestInsertPasswordResetToken(t *testing.T) {
 
 			defer db.Close()
 
+			_db, _ := redismock.NewClientMock()
+
 			tt.setupMock(mock)
 
-			repository := *repo.NewDBRepository(db)
+			repository := *repo.NewDBRepository(db, _db)
 			service := NewUserService(repository)
 
 			_, err = service.InsertPasswordResetToken(context.Background(), db, tt.user)

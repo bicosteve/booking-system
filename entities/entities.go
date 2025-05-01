@@ -95,7 +95,7 @@ type MysqlConfig struct {
 type StripeConfig struct {
 	Name         string `toml:"name"`
 	StripeSecret string `toml:"stripesecret"`
-	Publishable  string `toml:"publishable"`
+	PubKey       string `toml:"pubkey"`
 	SuccessURL   string `toml:"successurl"`
 	CancelURL    string `toml:"cancelurl"`
 }
@@ -109,10 +109,10 @@ type RedisConfig struct {
 }
 
 type KakfaConfig struct {
-	Name   string `toml:"name"`
-	Broker string `toml:"broker"`
-	Topic  string `toml:"topic"`
-	Key    string `toml:"key"`
+	Name   string   `toml:"name"`
+	Broker string   `toml:"broker"`
+	Topics []string `toml:"topics"`
+	Key    string   `toml:"key"`
 }
 
 type SecretConfig struct {
@@ -196,10 +196,11 @@ type Filters struct {
 }
 
 type BookingPayload struct {
-	Days   int     `json:"days"`
-	UserID int     `json:"user_id,omitempty"`
-	RoomID int     `json:"room_id,omitempty"`
-	Amount float64 `json:"amount,omitempty"`
+	Days   *int     `json:"days,omitempty"`
+	UserID *int     `json:"user_id,omitempty"`
+	RoomID *int     `json:"room_id,omitempty"`
+	Amount *float64 `json:"amount,omitempty"`
+	Status *int     `json:"status,omitempty"`
 }
 
 type Booking struct {
@@ -213,10 +214,14 @@ type Booking struct {
 }
 
 type TRXPayload struct {
-	RoomID  int         `json:"room_id"`
-	UserID  int         `json:"user_id"`
-	Days    int         `json:"days"`
-	Payment PaymentBody `json:"payment"`
+	RoomID    int         `json:"room_id"`
+	UserID    int         `json:"user_id"`
+	OrderID   string      `json:"order_id"`
+	Reference string      `json:"reference"`
+	TrxID     string      `json:"trx_id"`
+	Status    int         `json:"status"`
+	Days      int         `json:"days"`
+	Payment   PaymentBody `json:"payment"`
 }
 
 type PaymentBody struct {
@@ -228,36 +233,31 @@ type PaymentBody struct {
 
 type Transaction struct {
 	ID        int       `json:"id"`
-	RoomID    int       `json:"room_id"`
 	UserID    int       `json:"user_id"`
+	RoomID    int       `json:"room_id"`
 	Amount    float64   `json:"amount"`
+	Reference string    `json:"reference"`
+	Status    int       `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Payment struct {
-	ID            int       `json:"id"`
+	OrderID       string    `json:"order_id"`
 	UserID        int       `json:"user_id"`
-	CaptureMethod string    `json:"capture_method"`
-	Amount        float64   `json:"amount"`
-	TransactionID int       `json:"transaction_id"`
-	CustomerId    string    `json:"customer_id"`
 	PaymentId     string    `json:"payment_id"`
-	Status        string    `json:"status"` // initial, success, failed
+	Amount        float64   `json:"amount"`
+	ClientSecret  string    `json:"client_secret"`
+	TransactionID string    `json:"transaction_id"`
+	CustomerId    int       `json:"customer_id"`
+	RoomID        int       `json:"room_id"`
+	Status        string    `json:"status"`
 	Response      string    `json:"response"`
 	PaymentUrl    string    `json:"payment_url"`
+	CaptureMethod string    `json:"capture_method"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
-
-// type PaymentStatus string
-
-// const (
-// 	PaymentStatusInitial PaymentStatus = "initial"
-// 	PaymentStatusSuccess PaymentStatus = "success"
-// 	PaymentStatusFailed  PaymentStatus = "failed"
-// 	PaymentStatusPending PaymentStatus = "pending"
-// )
 
 type args map[string]interface{}
 
@@ -289,3 +289,7 @@ const (
 	PhoneNumberKeyValue phoneNumber = "phonenumber"
 	UseridKeyValue      useridKey   = 0
 )
+
+var BookingStatusPending = 0
+var BookingStatusConfirmed = 1
+var BookingStatusCheckedOut = 2

@@ -12,11 +12,10 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-func (b *Base) PaymentConsumer(wg *sync.WaitGroup) {
+func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 	defer wg.Done()
 
 	consumer := b.KafkaConsumer
-	topic := b.Topic
 
 	err := consumer.SubscribeTopics([]string{topic}, nil)
 	if err != nil {

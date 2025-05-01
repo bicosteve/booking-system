@@ -78,7 +78,7 @@ func QPublishMessage(broker, topic, key string, data any) error {
 		return errors.New(err.Error())
 	}
 
-	defer p.Flush(15 * 1000)
+	defer p.Flush(15 * 100)
 	defer p.Close()
 
 	wg.Add(1)

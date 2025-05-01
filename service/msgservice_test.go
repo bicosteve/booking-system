@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/repo"
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,11 +70,13 @@ func TestSubmitMessage(t *testing.T) {
 			}
 			defer db.Close()
 
+			_db, _ := redismock.NewClientMock()
+
 			// Set up the mock expectations
 			tt.setupMock(mock)
 
 			// Create a new repository and service
-			repository := *repo.NewDBRepository(db)
+			repository := *repo.NewDBRepository(db, _db)
 			service := NewUserService(repository)
 
 			// Execute the function

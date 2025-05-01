@@ -20,6 +20,8 @@ require (
 
 require (
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
+	github.com/go-redis/redismock/v9 v9.2.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/stripe/stripe-go/v72 v72.122.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 )
