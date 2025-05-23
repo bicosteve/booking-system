@@ -20,6 +20,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/redis/go-redis/v9"
+
+	_ "github.com/swaggo/http-swagger/example/go-chi/docs"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 type Base struct {
@@ -203,6 +206,10 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http:localhost:7001/swagger/doc.json"),
+	))
+
 	// Public Routes
 	r.Post(b.path+"/user/register", b.RegisterHandler)
 	r.Post(b.path+"/user/login", b.LoginHandler)
@@ -230,6 +237,10 @@ func (b *Base) adminRouter() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
+
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http:localhost:7002/swagger/doc.json"),
+	))
 
 	router.Route(b.path, func(r chi.Router) {
 		// stripe.Key = b.stripesecret

@@ -103,7 +103,7 @@ func QPublishMessage(broker, topic, key string, data any) error {
 	}
 
 	p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: -1},
 		Key:            []byte(key),
 		Value:          []byte(string(dataBytes)),
 	}, nil)
