@@ -1,7 +1,15 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Booking API to perform booking CRUD operations",
+        "title": "Booking API",
+        "contact": {
+            "name": "Bico Oloo",
+            "url": "https://github.com/bicosteve",
+            "email": "bicosteve4@gmail.com"
+        },
+        "version": "1"
     },
+    "basePath": "/api",
     "paths": {}
 }

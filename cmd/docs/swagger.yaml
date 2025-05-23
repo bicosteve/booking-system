@@ -1,4 +1,11 @@
+basePath: /api
 info:
-  contact: {}
+  contact:
+    email: bicosteve4@gmail.com
+    name: Bico Oloo
+    url: https://github.com/bicosteve
+  description: Booking API to perform booking CRUD operations
+  title: Booking API
+  version: "1"
 paths: {}
 swagger: "2.0"

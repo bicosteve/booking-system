@@ -9,7 +9,11 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "Bico Oloo",
+            "url": "https://github.com/bicosteve",
+            "email": "bicosteve4@gmail.com"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -19,18 +23,18 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Booking API",
+	Description:      "Booking API to perform booking CRUD operations",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
 	RightDelim:       "}}",
 }
 
-func init() {
-	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
-}
+// func init() {
+// 	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
+// }
