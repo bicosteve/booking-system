@@ -207,7 +207,7 @@ func (b *Base) userRouter() http.Handler {
 	utils.SetCors(r)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http:localhost:7001/swagger/doc.json"),
+		httpSwagger.URL("http:localhost:8080/swagger/doc.json"),
 	))
 
 	// Public Routes
@@ -239,11 +239,10 @@ func (b *Base) adminRouter() http.Handler {
 	utils.SetCors(router)
 
 	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http:localhost:7002/swagger/doc.json"),
+		httpSwagger.URL("http:localhost:8080/swagger/doc.json"),
 	))
 
 	router.Route(b.path, func(r chi.Router) {
-		// stripe.Key = b.stripesecret
 		r.Use(utils.AuthMiddleware(b.jwtSecret))
 		r.Use(utils.AdminMiddlware)
 		r.Post("/admin/rooms", b.CreateRoomHandler)
