@@ -206,8 +206,10 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http:localhost:8080/swagger/doc.json"),
+	r.Get("/swagger", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:7001/swagger/doc.json"),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("none"),
 	))
 
 	// Public Routes
@@ -238,8 +240,10 @@ func (b *Base) adminRouter() http.Handler {
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
 
-	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http:localhost:8080/swagger/doc.json"),
+	router.Mount("/swagger", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:7002/swagger/doc.json"),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("none"),
 	))
 
 	router.Route(b.path, func(r chi.Router) {

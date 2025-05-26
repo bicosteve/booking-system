@@ -15,9 +15,8 @@ import (
 // @contact.url https://github.com/bicosteve
 // @contact.email bicosteve4@gmail.com
 
-// @host.user localhost:7001
-// @host.admin localhost:7002
 // @BasePath /api
+// @schemes http
 
 func main() {
 

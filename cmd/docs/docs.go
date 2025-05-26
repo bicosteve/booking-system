@@ -26,7 +26,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1",
 	Host:             "",
 	BasePath:         "/api",
-	Schemes:          []string{},
+	Schemes:          []string{"http"},
 	Title:            "Booking API",
 	Description:      "Booking API to perform booking CRUD operations",
 	InfoInstanceName: "swagger",

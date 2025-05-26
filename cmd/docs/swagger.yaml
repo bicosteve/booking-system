@@ -8,4 +8,6 @@ info:
   title: Booking API
   version: "1"
 paths: {}
+schemes:
+- http
 swagger: "2.0"

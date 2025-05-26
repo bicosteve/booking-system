@@ -9,8 +9,19 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/utils"
+	_ "github.com/swaggo/http-swagger/v2"
 )
 
+// @Summary Registers User
+// @Description **Receives user payload, validate it then send it to service
+// @ID register user
+// @Tags Register
+// @Accept application/json
+// @Produce application/json
+// @Success 201 {object} booking.system "User registered"
+// @Failure 400 {object} booking.system "Invalid payload"
+// @Failure 500 {object} booking.system "Internal server error"
+// @Router /api/user/register
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
@@ -46,6 +57,16 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Login User
+// @Description **Receives user payload, validate it then send it to service
+// @ID login user
+// @Tags Login
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} booking.system "Generate token"
+// @Failure 404 {object} booking.system "User not found"
+// @Failure 500 {object} booking.system "Internal server error"
+// @Router /api/user/login
 func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
@@ -93,6 +114,15 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Get a  User
+// @Description **Receives user payload, validate it then send it to service
+// @ID user profile
+// @Tags Profile
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} booking.system "Returns user"
+// @Failure 500 {object} booking.system "Internal server error"
+// @Router /api/user/me
 func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -121,6 +151,15 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Generate Password Reset Token
+// @Description **Receives user payload, validate it then send it to service
+// @ID reset token
+// @Tags Token
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} booking.system "Returns user"
+// @Failure 500 {object} booking.system "Internal server error"
+// @Router /api/user/reset
 func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -225,6 +264,15 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 
 }
 
+// @Summary Reset Password
+// @Description **Receives user payload, validate it then send it to service
+// @ID reset token
+// @Tags Token
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {object} booking.system "Returns success"
+// @Failure 500 {object} booking.system "Internal server error"
+// @Router /api/user/password-reset?token={token}
 func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
