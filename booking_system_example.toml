@@ -1,52 +1,44 @@
 [app]
-id = "booking-system.api"
-enable = true
-version = "1.0"
-name = "booking system app"
 developer = ["bico.steve4@gmail.com"]
-
+enable = true
+id = "booking-system.api"
+name = "booking system app"
+version = "1.0"
 
 [logger]
+file = "booking-system.log"
+handler = "json"
+level = "debug"
 path = "./logs"
 writer = "both"
-file = "booking-system.log"
-level = "debug"
-handler = "json"
-
 
 # local mysql 
 [[mysql]]
-name = "mysql"
 host = "127.0.0.1"
-port = 3306
-username = ""
+name = "mysql"
 password = ""
+port = 3306
 schema = ""
-
+username = ""
 
 # redis configs
 [[redis]]
-name = "redis"
 address = ""
+database = 0
+name = "redis"
 password = ""
 port = ""
-database = 0
-
 
 [[kafka]]
+broker = "localhost:19092"
 name = 'kafka'
-broker = ""
-topic = ""
-key = ""
-
+topics = ['payment_one', 'payment_two']
 
 [[http]]
-name = "main"
-host = "0.0.0.0"
-port = 7001
 adminport = 7002
-path = "/api"
-cors = { allowed_method = [
+args = {disableAuth = false}
+contenttype = "application/json"
+cors = {allowed_method = [
   "GET",
   "POST",
   "PUT",
@@ -60,25 +52,25 @@ cors = { allowed_method = [
   "Origin",
 ], allowed_origin = [
   "*",
-] }
-args = { disableAuth = false }
-contenttype = "application/json"
-
+]}
+host = "0.0.0.0"
+name = "main"
+path = "/api"
+port = 7001
 
 # secrets
 [[secrets]]
-name = "secrets"
-jwt = ""
-sendgrid = ""
-mailfrom = ""
-atklng = ""
 appusername = ""
-
+atklng = ""
+jwt = ""
+mailfrom = ""
+name = "secrets"
+sendgrid = ""
 
 # Stripe
 [[stripe]]
-name = "stripe"
-stripesecret = ""
-pubkey = ""
-successURL = "http://host**/success"
 cancelURL = "http://host**/cancel"
+name = "stripe"
+pubkey = ""
+stripesecret = ""
+successURL = "http://host**/success"

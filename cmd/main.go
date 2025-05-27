@@ -3,8 +3,20 @@ package main
 import (
 	"sync"
 
+	_ "github.com/bicosteve/booking-system/cmd/docs"
 	"github.com/bicosteve/booking-system/controllers"
 )
+
+// @title Booking API
+// @version 1
+// @Description Booking API to perform booking CRUD operations
+
+// @contact.name Bico Oloo
+// @contact.url https://github.com/bicosteve
+// @contact.email bicosteve4@gmail.com
+
+// @BasePath /api
+// @schemes http
 
 func main() {
 
