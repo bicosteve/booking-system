@@ -23,21 +23,21 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	err := utils.SerializeJSON(w, r, payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	err = utils.ValidateRoom(payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
+		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -52,14 +52,14 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	err = b.roomService.CreateRoom(ctx, p)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]string{"msg": "created"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 }
@@ -77,7 +77,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	rooms, err := b.roomService.FindRooms(ctx)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
-		entities.MessageLogs.ErrorLog.Println("room not found")
+		utils.LogError("room not found", entities.ErrorLog, http.StatusNotFound)
 		return
 
 	}
@@ -102,7 +102,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		utils.ErrorJSON(w, errors.New("error: room status provided not found"), http.StatusNotFound)
-		entities.MessageLogs.ErrorLog.Println("room not found")
+		utils.LogError("room not found", entities.ErrorLog, http.StatusNotFound)
 		return
 
 	}
@@ -118,7 +118,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	roomId, err := strconv.Atoi(chi.URLParam(r, "room_id"))
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	userId, _ := strconv.Atoi(userID)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
+		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -139,7 +139,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	err = utils.SerializeJSON(w, r, &input)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
@@ -151,12 +151,10 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 		room.Status = *input.Status
 	}
 
-	entities.MessageLogs.InfoLog.Println("room_to_update", &room)
-
 	err = b.roomService.UpdateARoom(ctx, &room, roomId, userId)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 
 	}
@@ -164,7 +162,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"msg": "room updated"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -177,14 +175,14 @@ func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 	roomId, err := strconv.Atoi(chi.URLParam(r, "room_id"))
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println("error extracting userid from context")
+		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -192,14 +190,14 @@ func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 	err = b.roomService.DeleteARoom(ctx, roomId, id)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"msg": "Deleted"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 

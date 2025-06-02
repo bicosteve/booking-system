@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -19,7 +21,8 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 
 	err := consumer.SubscribeTopics([]string{topic}, nil)
 	if err != nil {
-		entities.MessageLogs.InfoLog.Printf("CONSUMER ERROR: problem %v:\n", err)
+		_resp := fmt.Sprintf("CONSUMER ERROR: problem %v:\n", err)
+		utils.LogError(_resp, entities.ErrorLog)
 		os.Exit(1)
 	}
 
@@ -41,7 +44,8 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 		select {
 		case <-ctx.Done():
 			consumer.Close()
-			entities.MessageLogs.InfoLog.Printf("Detected termination signal %v: exiting\n", <-ctx.Done())
+			_msg := fmt.Sprintf("Detected termination signal %v: exiting\n", <-ctx.Done())
+			utils.LogError(_msg, entities.ErrorLog)
 			os.Exit(1)
 		default:
 			msg, err := consumer.ReadMessage(1000 * time.Millisecond)
@@ -50,12 +54,14 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 					// utils.MessageLogs.InfoLog.Println("No new messages ... ")
 					continue
 				}
-				entities.MessageLogs.ErrorLog.Printf("Consumer error: %v %v:\n", err, msg)
+				msg := fmt.Sprintf("Consumer error: %v %v:\n", err, msg)
+				utils.LogError(msg, entities.ErrorLog)
 				return
 
 			}
 
-			entities.MessageLogs.InfoLog.Printf("Consumed from topic %s key=%-10s value = %s\n", *msg.TopicPartition.Topic, string(msg.Key), string(msg.Value))
+			_imsg := fmt.Sprintf("Consumed from topic %s key=%-10s value = %s\n", *msg.TopicPartition.Topic, string(msg.Key), string(msg.Value))
+			utils.LogInfo(_imsg, entities.InfoLog)
 		}
 
 	}

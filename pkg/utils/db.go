@@ -16,7 +16,7 @@ func DatabaseConnection(dsn string) (*sql.DB, error) {
 
 	err = db.Ping()
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("%s %s", entities.ErrorDBPing.Error(), err)
+		LogError(entities.ErrorDBPing.Error()+err.Error(), entities.ErrorLog)
 		return nil, err
 	}
 
@@ -24,6 +24,6 @@ func DatabaseConnection(dsn string) (*sql.DB, error) {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	entities.MessageLogs.InfoLog.Printf("%s", entities.SuccessDBPing)
+	LogInfo(entities.SuccessDBPing, entities.InfoLog)
 	return db, nil
 }

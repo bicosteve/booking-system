@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 )
 
 type SMSRepository interface {
@@ -16,7 +17,7 @@ func (r *Repository) AddSMSOutbox(ctx context.Context, msg entities.SMSPayload) 
 
 	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		return err
 	}
 
@@ -28,7 +29,7 @@ func (r *Repository) AddSMSOutbox(ctx context.Context, msg entities.SMSPayload) 
 
 	_, err = stmt.ExecContext(ctx, args...)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		return err
 	}
 

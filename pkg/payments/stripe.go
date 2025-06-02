@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/paymentintent"
 )
@@ -35,7 +36,7 @@ func GetPaymentStatus(stripeKey, paymentId string) (*stripe.PaymentIntent, error
 	params := &stripe.PaymentIntentParams{}
 	result, err := paymentintent.Get(paymentId, params)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		return nil, errors.New("stripe payment get session failed")
 	}
 
