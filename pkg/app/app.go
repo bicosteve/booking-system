@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 )
 
 func LoadConfigs(file string) (entities.Config, error) {
@@ -12,14 +13,14 @@ func LoadConfigs(file string) (entities.Config, error) {
 
 	data, err := os.ReadFile(file)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Fatalf("could not read toml file due to %v ", err)
+		utils.LogError("Could not read toml file due to "+err.Error(), entities.ErrorLog)
 		return entities.Config{}, err
 
 	}
 
 	_, err = toml.Decode(string(data), &config)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Fatalf("could not load configs due to %v ", err)
+		utils.LogError("Error logging config because of "+err.Error(), entities.ErrorLog)
 		return entities.Config{}, err
 
 	}

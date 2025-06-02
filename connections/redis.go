@@ -2,9 +2,11 @@ package connections
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -24,7 +26,7 @@ func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client
 		return nil, err
 	}
 
-	entities.MessageLogs.InfoLog.Printf("REDIS: %v", pong)
+	utils.LogInfo(fmt.Sprintf("REDIS: %v", pong), entities.InfoLog)
 
 	return client, nil
 }

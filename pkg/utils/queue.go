@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -19,7 +20,7 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 
 	go func() {
 		<-sigs
-		entities.MessageLogs.InfoLog.Printf("PRODUCER: Received termination signal. Exiting")
+		LogError("PRODUCER: Received termination signal. Exiting", entities.ErrorLog)
 		os.Exit(1)
 
 	}()
@@ -30,11 +31,12 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("PRODUCER: Could not connect to broker becasue:  %v\n", err)
+		LogError("PRODUCER: Could not connect to broker becasue: "+err.Error(), entities.ErrorLog)
 		return nil, err
 	}
 
-	entities.MessageLogs.InfoLog.Println("PRODUCER: connected successfully")
+	// entities.MessageLogs.InfoLog.Println("PRODUCER: connected successfully")
+	LogInfo("PRODUCER: connected successfully", entities.InfoLog)
 
 	return p, nil
 }
@@ -45,7 +47,7 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 
 	go func() {
 		<-sigs
-		entities.MessageLogs.InfoLog.Printf("CONSUMER: Received termination signal. Exiting")
+		LogError("CONSUMER: Received termination signal. Exiting", entities.ErrorLog)
 		os.Exit(1)
 
 	}()
@@ -57,11 +59,11 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("CONSUMER: Could not connect to consumer because: %v\n", err)
+		LogError("CONSUMER: Could not connect due to "+err.Error(), entities.ErrorLog)
 		return nil, err
 	}
 
-	entities.MessageLogs.InfoLog.Println("CONSUMER: connected successfully")
+	LogInfo("CONSUMER: connected successfully", entities.InfoLog)
 
 	return c, nil
 }
@@ -74,7 +76,7 @@ func QPublishMessage(broker, topic, key string, data any) error {
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return errors.New(err.Error())
 	}
 
@@ -87,9 +89,11 @@ func QPublishMessage(broker, topic, key string, data any) error {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					entities.MessageLogs.ErrorLog.Printf("Message not delivered because of %v\n ", ev.TopicPartition)
+					LogError("message cannot be delivered because of "+ev.TopicPartition.String(), entities.ErrorLog)
 				} else {
-					entities.MessageLogs.InfoLog.Printf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
+					_msg := fmt.Sprintf("Produced events to topic %s key = %-10s value = %s\n", *ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
+
+					LogInfo(_msg, entities.InfoLog)
 
 				}
 			}

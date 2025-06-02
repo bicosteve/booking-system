@@ -46,7 +46,7 @@ type LoggerConfig struct {
 	Writer  string `toml:"writer"`
 	Level   string `toml:"level"`
 	Path    string `toml:"path"`
-	File    string `toml:"file"`
+	Folder  string `toml:"folder"`
 	Handler string `toml:"handler"`
 }
 
@@ -261,14 +261,9 @@ type Payment struct {
 
 type args map[string]interface{}
 
-var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-var errorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+var ErrorLog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 var EmailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-
-var MessageLogs = &Message{
-	InfoLog:  infoLog,
-	ErrorLog: errorLog,
-}
 
 var ErrNoRecord = errors.New("MODELS: no matching record found")
 var ErrDuplicateEmail = errors.New("MODELS: user already exists")

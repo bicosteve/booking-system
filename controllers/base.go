@@ -75,15 +75,22 @@ func (b *Base) Init() {
 
 	}
 
+	err = utils.InitLogger(config.Logger.Folder)
+	if err != nil {
+		utils.LogError(err.Error(), entities.ErrorLog)
+		os.Exit(1)
+	}
+
 	p, err := utils.ProducerConnect(brokerURL)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("Error connecting because of %s\n", err)
+		// entities.MessageLogs.ErrorLog.Printf("Error connecting because of %s\n", err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
 
 	c, err := utils.ConsumerConnect(brokerURL)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("Error connecting because of %s\n", err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
 
@@ -91,7 +98,8 @@ func (b *Base) Init() {
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", sql.Username, sql.Password, sql.Host, sql.Port, sql.Schema)
 		db, err := connections.DatabaseConnection(dsn)
 		if err != nil {
-			entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect db due to %v", err)
+			// entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect db due to %v", err)
+			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
@@ -102,7 +110,7 @@ func (b *Base) Init() {
 	for _, cache := range config.Redis {
 		redisClient, err := connections.NewRedisDB(ctx, cache)
 		if err != nil {
-			entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect redis due to %v", err)
+			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
@@ -163,7 +171,9 @@ func (b *Base) Init() {
 	paymentService := service.NewPaymentService(*paymentRepository)
 	b.paymentService = paymentService
 
-	entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
+	// entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
+	_msg := fmt.Sprintf("Connections done in %v\n", time.Since(startTime))
+	utils.LogInfo(_msg, entities.InfoLog)
 
 }
 
@@ -178,7 +188,7 @@ func (b *Base) UserServer(wg *sync.WaitGroup, port, server string) {
 	fmt.Printf("Listening to %v server on port %s \n", server, port)
 	err := userSRV.ListenAndServe()
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("error running user server %v", err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
 
@@ -195,7 +205,8 @@ func (b *Base) AdminServer(wg *sync.WaitGroup, port, server string) {
 	fmt.Printf("Listening to %v server on port %s \n", server, port)
 	err := userSRV.ListenAndServe()
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Printf("error running user server %v", err)
+		// entities.MessageLogs.ErrorLog.Printf("error running user server %v", err)
+		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
 

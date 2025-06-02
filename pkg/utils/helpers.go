@@ -98,7 +98,7 @@ func ValidateBooking(data *entities.BookingPayload) error {
 func GeneratePasswordHash(p string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return "", err
 	}
 
@@ -108,7 +108,7 @@ func GeneratePasswordHash(p string) (string, error) {
 func ComparePasswordWithHash(password string, hash *string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(*hash), []byte(password))
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return false
 
 	}
@@ -131,7 +131,7 @@ func GenerateAuthToken(user entities.User, secret string) (string, error) {
 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return "", err
 	}
 
@@ -142,7 +142,7 @@ func verifyAuthToken(tokenString, secret string) (*entities.Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &entities.Claims{}, func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			entities.MessageLogs.ErrorLog.Println("error occurent while signing token")
+			LogError("error occurred while signing token", entities.ErrorLog)
 			return nil, fmt.Errorf("error occurent while signing token")
 		}
 
@@ -150,18 +150,18 @@ func verifyAuthToken(tokenString, secret string) (*entities.Claims, error) {
 	})
 
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return &entities.Claims{}, err
 	}
 
 	if !token.Valid {
-		entities.MessageLogs.ErrorLog.Println("token is invalid")
+		LogError("token is invalid", entities.ErrorLog)
 		return nil, fmt.Errorf("token is invalid")
 	}
 
 	claims, ok := token.Claims.(*entities.Claims)
 	if !ok {
-		entities.MessageLogs.ErrorLog.Println("invalid claims")
+		LogError("invalid claims", entities.ErrorLog)
 		return nil, fmt.Errorf("invalid claims")
 	}
 
@@ -174,7 +174,7 @@ func GenerateResetToken(userId string) (string, error) {
 	tknBytes := make([]byte, 32)
 	_, err := rand.Read(tknBytes)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		LogError(err.Error(), entities.ErrorLog)
 		return "", err
 	}
 
@@ -196,7 +196,7 @@ func IsValidResetToken(token string) (bool, string, error) {
 	// 1. Split token string into 3 parts to separate randStr, timeInMillis, userID
 	parts := strings.Split(token, "|")
 	if len(parts) < 3 {
-		entities.MessageLogs.ErrorLog.Println("invalid reset token")
+		LogError("invalid reset token", entities.ErrorLog)
 		return false, "", errors.New("invalid reset token")
 	}
 
@@ -206,7 +206,7 @@ func IsValidResetToken(token string) (bool, string, error) {
 	// 2. Convert expiration time from string to int
 	timeInInt, err := strconv.Atoi(tokenExpirationStr)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err.Error())
+		LogError(err.Error(), entities.ErrorLog)
 		return false, "", err
 	}
 
@@ -261,7 +261,7 @@ func SendSMS(key, username, phoneNumber, msg string) (string, error) {
 
 	res, err := client.SendBulk(request)
 	if err != nil {
-		entities.MessageLogs.ErrorLog.Println(err)
+		LogError(err.Error(), entities.ErrorLog)
 		return "", err
 	}
 
