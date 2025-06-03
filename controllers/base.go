@@ -107,8 +107,6 @@ func (b *Base) Init() {
 
 	}
 
-	fmt.Println("Connecting to database...")
-
 	for _, cache := range config.Redis {
 		redisClient, err := connections.NewRedisDB(ctx, cache)
 		if err != nil {
