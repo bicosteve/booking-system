@@ -12,16 +12,20 @@ import (
 	_ "github.com/swaggo/http-swagger/v2"
 )
 
+type APIResponse struct {
+	Msg string
+}
+
 // @Summary Registers User
 // @Description **Receives user payload, validate it then send it to service
 // @ID register user
 // @Tags Register
 // @Accept application/json
 // @Produce application/json
-// @Success 201 {object} booking.system "User registered"
-// @Failure 400 {object} booking.system "Invalid payload"
-// @Failure 500 {object} booking.system "Internal server error"
-// @Router /api/user/register
+// @Success 201 {object} APIResponse "User registered"
+// @Failure 400 {object} APIResponse "Invalid payload"
+// @Failure 500 {object} APIResponse "Internal server error"
+// @Router /api/user/register [post]
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
@@ -63,10 +67,10 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags Login
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} booking.system "Generate token"
-// @Failure 404 {object} booking.system "User not found"
-// @Failure 500 {object} booking.system "Internal server error"
-// @Router /api/user/login
+// @Success 200 {object} APIResponse "Generate token"
+// @Failure 404 {object} APIResponse "User not found"
+// @Failure 500 {object} APIResponse "Internal server error"
+// @Router /api/user/login [post]
 func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
@@ -114,15 +118,19 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type APIUserResponse struct {
+	User entities.User
+}
+
 // @Summary Get a  User
 // @Description **Receives user payload, validate it then send it to service
 // @ID user profile
 // @Tags Profile
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} booking.system "Returns user"
-// @Failure 500 {object} booking.system "Internal server error"
-// @Router /api/user/me
+// @Success 200 {object} APIUserResponse "Returns user"
+// @Failure 500 {object} APIUserResponse "Internal server error"
+// @Router /api/user/me [get]
 func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -157,9 +165,9 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags Token
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} booking.system "Returns user"
-// @Failure 500 {object} booking.system "Internal server error"
-// @Router /api/user/reset
+// @Success 200 {object} APIUserResponse "Returns user"
+// @Failure 500 {object} APIUserResponse "Internal server error"
+// @Router /api/user/reset [post]
 func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -266,13 +274,13 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 
 // @Summary Reset Password
 // @Description **Receives user payload, validate it then send it to service
-// @ID reset token
+// @ID reset password
 // @Tags Token
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} booking.system "Returns success"
-// @Failure 500 {object} booking.system "Internal server error"
-// @Router /api/user/password-reset?token={token}
+// @Success 200 {object} APIResponse "Returns success"
+// @Failure 500 {object} APIResponse "Internal server error"
+// @Router /api/user/password-reset [put]
 func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

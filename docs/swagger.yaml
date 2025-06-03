@@ -1,0 +1,153 @@
+basePath: /api
+definitions:
+  controllers.APIResponse:
+    properties:
+      msg:
+        type: string
+    type: object
+  controllers.APIUserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/entities.User'
+    type: object
+  entities.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      isVender:
+        type: string
+      password:
+        type: string
+      password_inserted_at:
+        type: string
+      password_reset_token:
+        type: string
+      phone_number:
+        type: string
+      updated_at:
+        type: string
+    type: object
+info:
+  contact:
+    email: bicosteve4@gmail.com
+    name: Bico Oloo
+    url: https://github.com/bicosteve
+  description: Booking API to perform booking CRUD operations
+  title: Booking API
+  version: "1"
+paths:
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: '**Receives user payload, validate it then send it to service'
+      operationId: login user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Generate token
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+      summary: Login User
+      tags:
+      - Login
+  /api/user/me:
+    get:
+      consumes:
+      - application/json
+      description: '**Receives user payload, validate it then send it to service'
+      operationId: user profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns user
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
+      summary: Get a  User
+      tags:
+      - Profile
+  /api/user/password-reset:
+    put:
+      consumes:
+      - application/json
+      description: '**Receives user payload, validate it then send it to service'
+      operationId: reset password
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns success
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+      summary: Reset Password
+      tags:
+      - Token
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: '**Receives user payload, validate it then send it to service'
+      operationId: register user
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+      summary: Registers User
+      tags:
+      - Register
+  /api/user/reset:
+    post:
+      consumes:
+      - application/json
+      description: '**Receives user payload, validate it then send it to service'
+      operationId: reset token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns user
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
+      summary: Generate Password Reset Token
+      tags:
+      - Token
+schemes:
+- http
+swagger: "2.0"

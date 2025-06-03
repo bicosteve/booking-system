@@ -21,7 +21,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/redis/go-redis/v9"
 
-	_ "github.com/swaggo/http-swagger/example/go-chi/docs"
+	// _ "github.com/swaggo/http-swagger/example/go-chi/docs"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -100,12 +100,14 @@ func (b *Base) Init() {
 		if err != nil {
 			// entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect db due to %v", err)
 			utils.LogError(err.Error(), entities.ErrorLog)
-			os.Exit(1)
+			// os.Exit(1)
 		}
 
 		b.DB = db
 
 	}
+
+	fmt.Println("Connecting to database...")
 
 	for _, cache := range config.Redis {
 		redisClient, err := connections.NewRedisDB(ctx, cache)
@@ -217,7 +219,7 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
-	r.Get("/swagger", httpSwagger.Handler(
+	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:7001/swagger/doc.json"),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
