@@ -8,8 +8,8 @@ import (
 )
 
 // @title Booking API
-// @version 1
-// @Description Booking API to perform booking CRUD operations
+// @version 1.0
+// @Description Booking API to make booking reservations
 
 // @contact.name Bico Oloo
 // @contact.url https://github.com/bicosteve
