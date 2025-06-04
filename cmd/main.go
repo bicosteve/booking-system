@@ -3,8 +3,8 @@ package main
 import (
 	"sync"
 
-	_ "github.com/bicosteve/booking-system/cmd/docs"
 	"github.com/bicosteve/booking-system/controllers"
+	_ "github.com/bicosteve/booking-system/docs"
 )
 
 // @title Booking API
