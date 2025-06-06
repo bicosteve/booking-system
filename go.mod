@@ -18,7 +18,6 @@ require (
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v72 v72.122.0
-	github.com/swaggo/http-swagger/example/go-chi v0.0.0-20250521103423-c7b1da04c24a
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.38.0

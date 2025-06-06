@@ -16,15 +16,18 @@ type APIResponse struct {
 	Msg string
 }
 
+// RegisterAccount godoc
 // @Summary Registers User
 // @Description **Receives user payload, validate it then send it to service
 // @ID register user
 // @Tags Register
 // @Accept application/json
 // @Produce application/json
-// @Success 201 {object} APIResponse "User registered"
-// @Failure 400 {object} APIResponse "Invalid payload"
-// @Failure 500 {object} APIResponse "Internal server error"
+// @Param  body entities.UserPayload true "Register User"
+// @Success 201 map[string]string APIResponse "User registered"
+// @Failure 400 {object} entities.JSONResponse
+// @Failure 500 {object} entities.JSONResponse
+// @example response 201 application/json {"msg":"success"}
 // @Router /api/user/register [post]
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -61,15 +64,19 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Login User
+// Generate auth token godoc
+// @Summary Authorize User
 // @Description **Receives user payload, validate it then send it to service
 // @ID login user
 // @Tags Login
 // @Accept application/json
 // @Produce application/json
-// @Success 200 {object} APIResponse "Generate token"
-// @Failure 404 {object} APIResponse "User not found"
-// @Failure 500 {object} APIResponse "Internal server error"
+// @Param  body entities.UserPayload true "Login User"
+// @Success 200 map[string]string APIResponse "User registered"
+// @Failure 400 {object} entities.JSONResponse
+// @Failure 404 {object} entities.JSONResponse
+// @Failure 500 {object} entities.JSONResponse
+// @example response 200 application/json {"token":"xxxxxxxxxxx"}
 // @Router /api/user/login [post]
 func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -122,6 +129,7 @@ type APIUserResponse struct {
 	User entities.User
 }
 
+// Get profile info godoc
 // @Summary Get a  User
 // @Description **Receives user payload, validate it then send it to service
 // @ID user profile
