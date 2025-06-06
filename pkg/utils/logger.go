@@ -32,16 +32,14 @@ func InitLogger(logFolder string) error {
 	return nil
 }
 
-func logger(msg string, level *log.Logger, params ...any) {
-	message := fmt.Sprintf(msg, params...)
-	level.Printf("%s", message)
-
+func logger(level *log.Logger, msg string, params ...any) {
+	level.Printf(msg, params...)
 }
 
 func LogInfo(msg string, inf *log.Logger, params ...any) {
-	logger(msg, inf, params...)
+	logger(inf, msg, params...)
 }
 
 func LogError(msg string, err *log.Logger, params ...any) {
-	logger(msg, err, params...)
+	logger(err, msg, params...)
 }
