@@ -16,7 +16,7 @@ import (
 // @Summary Admin user create a room
 // @Description Receives room payload, validate it then send it to service
 // @ID create-room
-// @Tags Create Room
+// @Tags rooms
 // @Accept json
 // @Produce json
 // @Param  payload body entities.RoomPayload true "Create room"

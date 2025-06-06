@@ -116,7 +116,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Create Room"
+                    "rooms"
                 ],
                 "summary": "Admin user create a room",
                 "operationId": "create-room",
@@ -406,10 +406,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Login"
+                    "auth"
                 ],
                 "summary": "Authorize User",
-                "operationId": "login user",
+                "operationId": "login-user",
                 "parameters": [
                     {
                         "description": "Login User",
@@ -456,7 +456,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Profile"
+                    "auth"
                 ],
                 "summary": "Get a  User",
                 "operationId": "user-profile",
@@ -486,7 +486,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Token"
+                    "auth"
                 ],
                 "summary": "Reset Password",
                 "operationId": "reset-password",
@@ -533,7 +533,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Register"
+                    "auth"
                 ],
                 "summary": "Registers User",
                 "operationId": "register-user",
@@ -580,7 +580,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Token"
+                    "auth"
                 ],
                 "summary": "Generate Password Reset Token",
                 "operationId": "reset-token",

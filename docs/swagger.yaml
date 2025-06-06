@@ -190,7 +190,7 @@ paths:
             $ref: '#/definitions/entities.JSONResponse'
       summary: Admin user create a room
       tags:
-      - Create Room
+      - rooms
   /api/admin/rooms/{room_id}:
     delete:
       consumes:
@@ -393,7 +393,7 @@ paths:
       consumes:
       - application/json
       description: Receives user payload, validate it then send it to service
-      operationId: login user
+      operationId: login-user
       parameters:
       - description: Login User
         in: body
@@ -422,7 +422,7 @@ paths:
             $ref: '#/definitions/entities.JSONResponse'
       summary: Authorize User
       tags:
-      - Login
+      - auth
   /api/user/me:
     get:
       description: Returns logged in user details
@@ -440,7 +440,7 @@ paths:
             $ref: '#/definitions/entities.JSONResponse'
       summary: Get a  User
       tags:
-      - Profile
+      - auth
   /api/user/password-reset:
     put:
       consumes:
@@ -471,7 +471,7 @@ paths:
             $ref: '#/definitions/controllers.APIUserResponse'
       summary: Reset Password
       tags:
-      - Token
+      - auth
   /api/user/register:
     post:
       consumes:
@@ -502,7 +502,7 @@ paths:
             $ref: '#/definitions/entities.JSONResponse'
       summary: Registers User
       tags:
-      - Register
+      - auth
   /api/user/reset:
     post:
       consumes:
@@ -529,7 +529,7 @@ paths:
             $ref: '#/definitions/controllers.APIUserResponse'
       summary: Generate Password Reset Token
       tags:
-      - Token
+      - auth
   /api/user/rooms:
     get:
       consumes:

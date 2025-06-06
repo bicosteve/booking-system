@@ -20,7 +20,7 @@ type APIResponse struct {
 // @Summary Registers User
 // @Description Receives user payload, validate it then send it to service
 // @ID register-user
-// @Tags Register
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param payload body entities.UserPayload true "Register User"
@@ -66,8 +66,8 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 // Generate auth token godoc
 // @Summary Authorize User
 // @Description Receives user payload, validate it then send it to service
-// @ID login user
-// @Tags Login
+// @ID login-user
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param  payload body entities.UserPayload true "Login User"
@@ -131,7 +131,7 @@ type APIUserResponse struct {
 // @Summary Get a  User
 // @Description Returns logged in user details
 // @ID user-profile
-// @Tags Profile
+// @Tags auth
 // @Produce json
 // @Success 200 {object} APIUserResponse "User retrieved successfully"
 // @Failure 500 {object} entities.JSONResponse "Internal server error"
@@ -167,7 +167,7 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 // @Summary Generate Password Reset Token
 // @Description Receives user payload, validate it then send it to service
 // @ID reset-token
-// @Tags Token
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param payload body entities.UserPayload true "Generate auth token"
@@ -281,7 +281,7 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 // @Summary Reset Password
 // @Description Receives user payload, validate it then send it to service
 // @ID reset-password
-// @Tags Token
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param payload body entities.UserPayload true "Generate auth token"
