@@ -16,6 +16,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// Create a booking godoc
+// @Summary user create a booking
+// @Description Receives booking payload, validates it, create a booking
+// @ID create-booking
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param  payload body entities.RoomPayload true "Create room"
+// @Success 201 {object} entities.JSONResponse "{"msg":"created"}"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/book [post]
 func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
@@ -87,7 +99,6 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 3. Create Payment Session on Stripe Before Booking
 	PaymentSession, err := payments.CreateStripePayment(stripeConf, payDetails)
 	if err != nil {
-		//entities.MessageLogs.ErrorLog.Println(err)
 		utils.LogError(err.Error(), entities.ErrorLog)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -122,6 +133,18 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Confirm booking godoc
+// @Summary user verify booking
+// @Description Receives room_id, validates it then confirm booking
+// @ID verify-booking
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param  room_id path string true "To verify room"
+// @Success 200 {object} entities.JSONResponse "Booking success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/verify/{room_id} [get]
 func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -202,12 +225,12 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	var status = entities.BookingStatusConfirmed
 
-	// err = b.paymentService.UpdatePayment(ctx, status, pi.ID)
-	// if err != nil {
-	// 	entities.MessageLogs.ErrorLog.Println(err)
-	// 	utils.ErrorJSON(w, err, http.StatusInternalServerError)
-	// 	return
-	// }
+	err = b.paymentService.UpdatePayment(ctx, status, pi.ID)
+	if err != nil {
+		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
 
 	trx := entities.TRXPayload{
 		RoomID:    booking.RoomID,
@@ -239,6 +262,19 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Get a booking godoc
+// @Summary get a booking
+// @Description Receives room_id then retrieves a booking
+// @ID get-booking
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Param  room_id path string true "To get a room"
+// @Success 200 {object} entities.Booking "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/{room_i} [get]
 func (b *Base) GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -271,6 +307,19 @@ func (b *Base) GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
+// Get all bookings godoc
+// @Summary get all bookings
+// @Description Receives room_id then retrieves a booking
+// @ID get-bookings
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Success 200 {array} entities.Booking "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Bookings not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/all [get]
 func (b *Base) GetAllHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -285,7 +334,6 @@ func (b *Base) GetAllHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		// entities.MessageLogs.ErrorLog.Println(errors.New("an error occured"))
 		utils.LogError(err.Error(), entities.ErrorLog)
 		utils.ErrorJSON(w, errors.New("an error occured"), http.StatusInternalServerError)
 		return
@@ -302,8 +350,20 @@ func (b *Base) GetAllHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"data": book})
 
-}
+} */
 
+// Get all bookings godoc
+// @Summary get all bookings
+// @Description Receives room_id then retrieves a booking
+// @ID user-bookings
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Success 200 {array} entities.Booking "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Bookings not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/all [get]
 func (b *Base) GetAllBookingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -329,6 +389,18 @@ func (b *Base) GetAllBookingsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Get all bookings godoc
+// @Summary get all bookings for admin user
+// @Description Retrieves all booking
+// @ID admin-bookings
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Success 200 {array} entities.Booking "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Bookings not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/admin/book/all [get]
 func (b *Base) GetAllAdminBookingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -354,6 +426,19 @@ func (b *Base) GetAllAdminBookingsHandler(w http.ResponseWriter, r *http.Request
 
 }
 
+// Get update a booking godoc
+// @Summary update user booking
+// @Description Updates a booking
+// @ID update-booking
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Params booking_id path string true "To get a booking"
+// @Success 200 {object} entities.JSONResponse "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Bookings not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/book/{booking_id} [put]
 func (b *Base) UpdateBooking(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -404,6 +489,20 @@ func (b *Base) UpdateBooking(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Get all bookings godoc
+// @Summary update user booking
+// @Description deletes a booking
+// @ID delete-booking
+// @Tags bookings
+// @Accept json
+// @Produce json
+// @Params booking_id path string true "To get a booking"
+// @Params room_id path string true "to update a room"
+// @Success 200 {object} entities.JSONResponse "Success"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Bookings not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/admin/book/{booking_id}/{room_id} [delete]
 func (b *Base) DeleteBooking(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
@@ -425,7 +524,7 @@ func (b *Base) DeleteBooking(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("cannot get user_id from context", entities.ErrorLog, http.StatusInternalServerError)
 		utils.ErrorJSON(w, errors.New("an error occured"), http.StatusInternalServerError)
 		return
 	}

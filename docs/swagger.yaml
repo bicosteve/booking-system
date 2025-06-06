@@ -10,6 +10,55 @@ definitions:
       user:
         $ref: '#/definitions/entities.User'
     type: object
+  entities.Booking:
+    properties:
+      created_at:
+        type: string
+      days:
+        type: integer
+      id:
+        type: integer
+      room_id:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      vender_id:
+        type: integer
+    type: object
+  entities.JSONResponse:
+    properties:
+      data: {}
+      error:
+        type: boolean
+      message:
+        type: string
+    type: object
+  entities.Room:
+    properties:
+      cost:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      vender_id:
+        type: string
+    type: object
+  entities.RoomPayload:
+    properties:
+      cost:
+        type: string
+      status:
+        type: string
+      vendor:
+        type: integer
+    type: object
   entities.User:
     properties:
       created_at:
@@ -31,45 +80,380 @@ definitions:
       updated_at:
         type: string
     type: object
+  entities.UserPayload:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      is_vendor:
+        type: string
+      password:
+        type: string
+      phone_number:
+        type: string
+    type: object
 info:
   contact:
     email: bicosteve4@gmail.com
     name: Bico Oloo
     url: https://github.com/bicosteve
-  description: Booking API to perform booking CRUD operations
+  description: Booking API to make booking reservations
   title: Booking API
-  version: "1"
+  version: "1.0"
 paths:
-  /api/user/login:
-    post:
+  /api/admin/book/{booking_id}/{room_id}:
+    delete:
       consumes:
       - application/json
-      description: '**Receives user payload, validate it then send it to service'
-      operationId: login user
+      description: deletes a booking
+      operationId: delete-booking
       produces:
       - application/json
       responses:
         "200":
-          description: Generate token
+          description: Success
           schema:
-            $ref: '#/definitions/controllers.APIResponse'
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
         "404":
-          description: User not found
+          description: Bookings not found
           schema:
-            $ref: '#/definitions/controllers.APIResponse'
+            $ref: '#/definitions/entities.JSONResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/controllers.APIResponse'
-      summary: Login User
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: update user booking
       tags:
-      - Login
-  /api/user/me:
+      - bookings
+  /api/admin/book/all:
     get:
       consumes:
       - application/json
-      description: '**Receives user payload, validate it then send it to service'
-      operationId: user profile
+      description: Retrieves all booking
+      operationId: admin-bookings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            items:
+              $ref: '#/definitions/entities.Booking'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Bookings not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: get all bookings for admin user
+      tags:
+      - bookings
+  /api/admin/rooms:
+    post:
+      consumes:
+      - application/json
+      description: Receives room payload, validate it then send it to service
+      operationId: create-room
+      parameters:
+      - description: Create room
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.RoomPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: '{"msg":"created"}'
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: Admin user create a room
+      tags:
+      - rooms
+  /api/admin/rooms/{room_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Receives room_id and deletes the room
+      operationId: delete-room
+      parameters:
+      - description: Room ID to delete
+        in: path
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room deleted successfully
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Room not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: delete a room
+      tags:
+      - rooms
+    put:
+      consumes:
+      - application/json
+      description: Receives room payload, validates it, then updates the room by identified
+        room_id
+      operationId: update-room
+      parameters:
+      - description: Room ID to update
+        in: path
+        name: room_id
+        required: true
+        type: string
+      - description: Room update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.RoomPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Room updated successfully
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Room not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: update a room
+      tags:
+      - rooms
+  /api/user/{room_i}:
+    get:
+      consumes:
+      - application/json
+      description: Receives room_id then retrieves a booking
+      operationId: get-booking
+      parameters:
+      - description: To get a room
+        in: path
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/entities.Booking'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: get a booking
+      tags:
+      - bookings
+  /api/user/all:
+    get:
+      consumes:
+      - application/json
+      description: Receives room_id then retrieves a booking
+      operationId: user-bookings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            items:
+              $ref: '#/definitions/entities.Booking'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Bookings not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: get all bookings
+      tags:
+      - bookings
+  /api/user/book:
+    post:
+      consumes:
+      - application/json
+      description: Receives booking payload, validates it, create a booking
+      operationId: create-booking
+      parameters:
+      - description: Create room
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.RoomPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: '{"msg":"created"}'
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: user create a booking
+      tags:
+      - bookings
+  /api/user/book/{booking_id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates a booking
+      operationId: update-booking
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Bookings not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: update user booking
+      tags:
+      - bookings
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: Receives user payload, validate it then send it to service
+      operationId: login-user
+      parameters:
+      - description: Login User
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.UserPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"token":"xxxxxxxxxxx"}'
+          schema:
+            $ref: '#/definitions/controllers.APIResponse'
+        "400":
+          description: Bad Request, validation error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Bad Request, user not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: Authorize User
+      tags:
+      - auth
+  /api/user/me:
+    get:
+      description: Returns logged in user details
+      operationId: user-profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User retrieved successfully
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: Get a  User
+      tags:
+      - auth
+  /api/user/password-reset:
+    put:
+      consumes:
+      - application/json
+      description: Receives user payload, validate it then send it to service
+      operationId: reset-password
+      parameters:
+      - description: Generate auth token
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.UserPayload'
       produces:
       - application/json
       responses:
@@ -77,39 +461,30 @@ paths:
           description: Returns user
           schema:
             $ref: '#/definitions/controllers.APIUserResponse'
+        "400":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/controllers.APIUserResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/controllers.APIUserResponse'
-      summary: Get a  User
-      tags:
-      - Profile
-  /api/user/password-reset:
-    put:
-      consumes:
-      - application/json
-      description: '**Receives user payload, validate it then send it to service'
-      operationId: reset password
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Returns success
-          schema:
-            $ref: '#/definitions/controllers.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/controllers.APIResponse'
       summary: Reset Password
       tags:
-      - Token
+      - auth
   /api/user/register:
     post:
       consumes:
       - application/json
-      description: '**Receives user payload, validate it then send it to service'
-      operationId: register user
+      description: Receives user payload, validate it then send it to service
+      operationId: register-user
+      parameters:
+      - description: Register User
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.UserPayload'
       produces:
       - application/json
       responses:
@@ -118,22 +493,29 @@ paths:
           schema:
             $ref: '#/definitions/controllers.APIResponse'
         "400":
-          description: Invalid payload
+          description: Bad request, validation error
           schema:
-            $ref: '#/definitions/controllers.APIResponse'
+            $ref: '#/definitions/entities.JSONResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/controllers.APIResponse'
+            $ref: '#/definitions/entities.JSONResponse'
       summary: Registers User
       tags:
-      - Register
+      - auth
   /api/user/reset:
     post:
       consumes:
       - application/json
-      description: '**Receives user payload, validate it then send it to service'
-      operationId: reset token
+      description: Receives user payload, validate it then send it to service
+      operationId: reset-token
+      parameters:
+      - description: Generate auth token
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/entities.UserPayload'
       produces:
       - application/json
       responses:
@@ -147,7 +529,74 @@ paths:
             $ref: '#/definitions/controllers.APIUserResponse'
       summary: Generate Password Reset Token
       tags:
-      - Token
+      - auth
+  /api/user/rooms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all rooms and filter using query param
+      operationId: get-rooms
+      parameters:
+      - description: Room ID to filter
+        in: query
+        name: room_id
+        type: string
+      - description: Room status to filter
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Single room (if exact match)
+          schema:
+            $ref: '#/definitions/entities.Room'
+        "400":
+          description: Bad request, validation error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "404":
+          description: Bad request, room not found
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: Get a room by rooms and filter by ID
+      tags:
+      - rooms
+  /api/user/verify/{room_id}:
+    get:
+      consumes:
+      - application/json
+      description: Receives room_id, validates it then confirm booking
+      operationId: verify-booking
+      parameters:
+      - description: To verify room
+        in: path
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Booking success
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/entities.JSONResponse'
+      summary: user verify booking
+      tags:
+      - bookings
 schemes:
 - http
 swagger: "2.0"

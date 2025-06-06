@@ -12,6 +12,18 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Create a room godoc
+// @Summary Admin user create a room
+// @Description Receives room payload, validate it then send it to service
+// @ID create-room
+// @Tags rooms
+// @Accept json
+// @Produce json
+// @Param  payload body entities.RoomPayload true "Create room"
+// @Success 201 {object} entities.JSONResponse "{"msg":"created"}"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/admin/rooms [post]
 func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 
@@ -64,6 +76,21 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get a room godoc
+// @Summary Get a room by rooms and filter by ID
+// @Description Retrieve all rooms and filter using query param
+// @ID  get-rooms
+// @Tags rooms
+// @Accept json
+// @Produce json
+// @Param room_id query string false "Room ID to filter"
+// @Param status query string false "Room status to filter"
+// @Success 200 {array} entities.Room "List of rooms (if no filter or multiple matches)"
+// @Success 200 {object} entities.Room "Single room (if exact match)"
+// @Failure 400 {object} entities.JSONResponse "Bad request, validation error"
+// @Failure 404 {object} entities.JSONResponse "Bad request, room not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/user/rooms [get]
 func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 
@@ -111,6 +138,20 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Update a room godoc
+// @Summary update a room
+// @Description Receives room payload, validates it, then updates the room by identified room_id
+// @ID update-room
+// @Tags rooms
+// @Accept json
+// @Produce json
+// @Param room_id path string true "Room ID to update"
+// @Param  payload body entities.RoomPayload true "Room update payload"
+// @Success 200 {object} entities.JSONResponse "Room updated successfully"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Room not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/admin/rooms/{room_id} [put]
 func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
 	defer cancel()
@@ -168,6 +209,19 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Delete a room godoc
+// @Summary delete a room
+// @Description Receives room_id and deletes the room
+// @ID delete-room
+// @Tags rooms
+// @Accept json
+// @Produce json
+// @Param room_id path string true "Room ID to delete"
+// @Success 200 {object} entities.JSONResponse "Room deleted successfully"
+// @Failure 401 {object} entities.JSONResponse "Unauthorized"
+// @Failure 404 {object} entities.JSONResponse "Room not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/admin/rooms/{room_id} [delete]
 func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
 	defer cancel()
