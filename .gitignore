@@ -2,3 +2,4 @@
 booking_system.toml
 .idea
 ./pkg/stripe/example.go
+./pkg/payments/example.go
