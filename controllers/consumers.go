@@ -51,7 +51,6 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 			msg, err := consumer.ReadMessage(1000 * time.Millisecond)
 			if err != nil {
 				if err.(kafka.Error).IsTimeout() {
-					// utils.MessageLogs.InfoLog.Println("No new messages ... ")
 					continue
 				}
 				msg := fmt.Sprintf("Consumer error: %v %v:\n", err, msg)

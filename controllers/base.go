@@ -21,7 +21,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/redis/go-redis/v9"
 
-	// _ "github.com/swaggo/http-swagger/example/go-chi/docs"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -47,11 +46,10 @@ type Base struct {
 	roomService    *service.RoomService
 	bookingService *service.BookingService
 	paymentService *service.PaymentService
-	// pp_clientid    string
-	stripesecret string
-	pubkey       string
-	successURL   string
-	cancelURL    string
+	stripesecret   string
+	pubkey         string
+	successURL     string
+	cancelURL      string
 }
 
 func (b *Base) Init() {
@@ -169,7 +167,6 @@ func (b *Base) Init() {
 	paymentService := service.NewPaymentService(*paymentRepository)
 	b.paymentService = paymentService
 
-	// entities.MessageLogs.InfoLog.Printf("Connections done in %v\n", time.Since(startTime))
 	_msg := fmt.Sprintf("Connections done in %v\n", time.Since(startTime))
 	utils.LogInfo(_msg, entities.InfoLog)
 

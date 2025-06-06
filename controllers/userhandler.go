@@ -37,7 +37,7 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err := utils.SerializeJSON(w, r, payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError(err.Error()+"(status %d)", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
@@ -121,6 +121,8 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
+
+	utils.LogInfo("login success 'user' %s STATUS %d", entities.InfoLog, payload.Email, http.StatusOK)
 }
 
 type APIUserResponse struct {
@@ -148,6 +150,8 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	utils.LogInfo("extract username from context success", entities.InfoLog, http.StatusOK)
+
 	user, err := b.userService.SubmitProfileRequest(ctx, userName)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusNotFound)
@@ -155,6 +159,7 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
+	utils.LogInfo("fetch user success "+user.ID, entities.InfoLog, http.StatusOK)
 
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"user": user})
 	if err != nil {
@@ -162,6 +167,7 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
+	utils.LogInfo("send user success "+user.ID, entities.InfoLog, http.StatusOK)
 }
 
 // @Summary Generate Password Reset Token

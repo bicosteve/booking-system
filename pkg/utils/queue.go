@@ -35,7 +35,6 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 		return nil, err
 	}
 
-	// entities.MessageLogs.InfoLog.Println("PRODUCER: connected successfully")
 	LogInfo("PRODUCER: connected successfully", entities.InfoLog)
 
 	return p, nil

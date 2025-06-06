@@ -307,51 +307,6 @@ func (b *Base) GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-// Get all bookings godoc
-// @Summary get all bookings
-// @Description Receives room_id then retrieves a booking
-// @ID get-bookings
-// @Tags bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking "Success"
-// @Failure 401 {object} entities.JSONResponse "Unauthorized"
-// @Failure 404 {object} entities.JSONResponse "Bookings not found"
-// @Failure 500 {object} entities.JSONResponse "Internal server error"
-// @Router /api/user/all [get]
-func (b *Base) GetAllHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", b.contentType)
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
-
-	bookingID, err := strconv.Atoi(chi.URLParam(r, "room_id"))
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		return
-	}
-
-	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
-	if !ok {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		utils.ErrorJSON(w, errors.New("an error occured"), http.StatusInternalServerError)
-		return
-
-	}
-	userid, _ := strconv.Atoi(userID)
-
-	book, err := b.bookingService.GetUserBooking(ctx, bookingID, userid)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		return
-	}
-
-	_ = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"data": book})
-
-} */
-
 // Get all bookings godoc
 // @Summary get all bookings
 // @Description Receives room_id then retrieves a booking
