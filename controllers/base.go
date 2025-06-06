@@ -83,7 +83,6 @@ func (b *Base) Init() {
 
 	p, err := utils.ProducerConnect(brokerURL)
 	if err != nil {
-		// entities.MessageLogs.ErrorLog.Printf("Error connecting because of %s\n", err)
 		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
@@ -98,9 +97,8 @@ func (b *Base) Init() {
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", sql.Username, sql.Password, sql.Host, sql.Port, sql.Schema)
 		db, err := connections.DatabaseConnection(dsn)
 		if err != nil {
-			// entities.MessageLogs.ErrorLog.Printf("BASE: Could not connect db due to %v", err)
 			utils.LogError(err.Error(), entities.ErrorLog)
-			// os.Exit(1)
+			os.Exit(1)
 		}
 
 		b.DB = db
@@ -205,7 +203,6 @@ func (b *Base) AdminServer(wg *sync.WaitGroup, port, server string) {
 	fmt.Printf("Listening to %v server on port %s \n", server, port)
 	err := userSRV.ListenAndServe()
 	if err != nil {
-		// entities.MessageLogs.ErrorLog.Printf("error running user server %v", err)
 		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}

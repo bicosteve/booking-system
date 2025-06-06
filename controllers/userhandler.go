@@ -18,16 +18,15 @@ type APIResponse struct {
 
 // RegisterAccount godoc
 // @Summary Registers User
-// @Description **Receives user payload, validate it then send it to service
-// @ID register user
+// @Description Receives user payload, validate it then send it to service
+// @ID register-user
 // @Tags Register
-// @Accept application/json
-// @Produce application/json
-// @Param  body entities.UserPayload true "Register User"
-// @Success 201 map[string]string APIResponse "User registered"
-// @Failure 400 {object} entities.JSONResponse
-// @Failure 500 {object} entities.JSONResponse
-// @example response 201 application/json {"msg":"success"}
+// @Accept json
+// @Produce json
+// @Param payload body entities.UserPayload true "Register User"
+// @Success 201 {object} APIResponse "User registered"
+// @Failure 400 {object} entities.JSONResponse "Bad request, validation error"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/register [post]
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -66,17 +65,16 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 // Generate auth token godoc
 // @Summary Authorize User
-// @Description **Receives user payload, validate it then send it to service
+// @Description Receives user payload, validate it then send it to service
 // @ID login user
 // @Tags Login
-// @Accept application/json
-// @Produce application/json
-// @Param  body entities.UserPayload true "Login User"
-// @Success 200 map[string]string APIResponse "User registered"
-// @Failure 400 {object} entities.JSONResponse
-// @Failure 404 {object} entities.JSONResponse
-// @Failure 500 {object} entities.JSONResponse
-// @example response 200 application/json {"token":"xxxxxxxxxxx"}
+// @Accept json
+// @Produce json
+// @Param  payload body entities.UserPayload true "Login User"
+// @Success 200 {object} APIResponse "{"token":"xxxxxxxxxxx"}"
+// @Failure 400 {object} entities.JSONResponse "Bad Request, validation error"
+// @Failure 404 {object} entities.JSONResponse "Bad Request, user not found"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/login [post]
 func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -131,13 +129,12 @@ type APIUserResponse struct {
 
 // Get profile info godoc
 // @Summary Get a  User
-// @Description **Receives user payload, validate it then send it to service
-// @ID user profile
+// @Description Returns logged in user details
+// @ID user-profile
 // @Tags Profile
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {object} APIUserResponse "Returns user"
-// @Failure 500 {object} APIUserResponse "Internal server error"
+// @Produce json
+// @Success 200 {object} APIUserResponse "User retrieved successfully"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/me [get]
 func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -168,11 +165,12 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Generate Password Reset Token
-// @Description **Receives user payload, validate it then send it to service
-// @ID reset token
+// @Description Receives user payload, validate it then send it to service
+// @ID reset-token
 // @Tags Token
-// @Accept application/json
-// @Produce application/json
+// @Accept json
+// @Produce json
+// @Param payload body entities.UserPayload true "Generate auth token"
 // @Success 200 {object} APIUserResponse "Returns user"
 // @Failure 500 {object} APIUserResponse "Internal server error"
 // @Router /api/user/reset [post]
@@ -202,7 +200,7 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Payload can come with or without some values but
+	// Use pointers since this payload may come with some values empty
 	var payload struct {
 		Email       *string `json:"email"`
 		PhoneNumber *string `json:"phone_number"`
@@ -281,13 +279,15 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 }
 
 // @Summary Reset Password
-// @Description **Receives user payload, validate it then send it to service
-// @ID reset password
+// @Description Receives user payload, validate it then send it to service
+// @ID reset-password
 // @Tags Token
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {object} APIResponse "Returns success"
-// @Failure 500 {object} APIResponse "Internal server error"
+// @Accept json
+// @Produce json
+// @Param payload body entities.UserPayload true "Generate auth token"
+// @Success 200 {object} APIUserResponse "Returns user"
+// @Failure 400 {object} APIUserResponse "Internal server error"
+// @Failure 500 {object} APIUserResponse "Internal server error"
 // @Router /api/user/password-reset [put]
 func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
@@ -297,7 +297,7 @@ func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	tkn := r.URL.Query().Get("token")
 	if len(tkn) < 1 {
 		utils.ErrorJSON(w, errors.New("reset token is required"), http.StatusBadRequest)
-		utils.LogError("reset token is not provided in query param", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("reset token not provided", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 

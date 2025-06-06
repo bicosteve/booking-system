@@ -19,9 +19,386 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/book/all": {
+            "get": {
+                "description": "Retrieves all booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "get all bookings for admin user",
+                "operationId": "admin-bookings",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bookings not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/book/{booking_id}/{room_id}": {
+            "delete": {
+                "description": "deletes a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "update user booking",
+                "operationId": "delete-booking",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bookings not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/rooms": {
+            "post": {
+                "description": "Receives room payload, validate it then send it to service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Create Room"
+                ],
+                "summary": "Admin user create a room",
+                "operationId": "create-room",
+                "parameters": [
+                    {
+                        "description": "Create room",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.RoomPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{\"msg\":\"created\"}",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/rooms/{room_id}": {
+            "put": {
+                "description": "Receives room payload, validates it, then updates the room by identified room_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "update a room",
+                "operationId": "update-room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID to update",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Room update payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.RoomPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Room updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Room not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Receives room_id and deletes the room",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "delete a room",
+                "operationId": "delete-room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID to delete",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Room deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Room not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/all": {
+            "get": {
+                "description": "Receives room_id then retrieves a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "get all bookings",
+                "operationId": "user-bookings",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bookings not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/book": {
+            "post": {
+                "description": "Receives booking payload, validates it, create a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "user create a booking",
+                "operationId": "create-booking",
+                "parameters": [
+                    {
+                        "description": "Create room",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.RoomPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{\"msg\":\"created\"}",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/book/{booking_id}": {
+            "put": {
+                "description": "Updates a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "update user booking",
+                "operationId": "update-booking",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bookings not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/login": {
             "post": {
-                "description": "**Receives user payload, validate it then send it to service",
+                "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
                 ],
@@ -31,25 +408,42 @@ const docTemplate = `{
                 "tags": [
                     "Login"
                 ],
-                "summary": "Login User",
+                "summary": "Authorize User",
                 "operationId": "login user",
+                "parameters": [
+                    {
+                        "description": "Login User",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.UserPayload"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Generate token",
+                        "description": "{\"token\":\"xxxxxxxxxxx\"}",
                         "schema": {
                             "$ref": "#/definitions/controllers.APIResponse"
                         }
                     },
-                    "404": {
-                        "description": "User not found",
+                    "400": {
+                        "description": "Bad Request, validation error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bad Request, user not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     }
                 }
@@ -57,10 +451,7 @@ const docTemplate = `{
         },
         "/api/user/me": {
             "get": {
-                "description": "**Receives user payload, validate it then send it to service",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Returns logged in user details",
                 "produces": [
                     "application/json"
                 ],
@@ -68,10 +459,10 @@ const docTemplate = `{
                     "Profile"
                 ],
                 "summary": "Get a  User",
-                "operationId": "user profile",
+                "operationId": "user-profile",
                 "responses": {
                     "200": {
-                        "description": "Returns user",
+                        "description": "User retrieved successfully",
                         "schema": {
                             "$ref": "#/definitions/controllers.APIUserResponse"
                         }
@@ -79,7 +470,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIUserResponse"
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     }
                 }
@@ -87,7 +478,7 @@ const docTemplate = `{
         },
         "/api/user/password-reset": {
             "put": {
-                "description": "**Receives user payload, validate it then send it to service",
+                "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
                 ],
@@ -98,18 +489,35 @@ const docTemplate = `{
                     "Token"
                 ],
                 "summary": "Reset Password",
-                "operationId": "reset password",
+                "operationId": "reset-password",
+                "parameters": [
+                    {
+                        "description": "Generate auth token",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.UserPayload"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Returns success",
+                        "description": "Returns user",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/controllers.APIUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.APIUserResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/controllers.APIUserResponse"
                         }
                     }
                 }
@@ -117,7 +525,7 @@ const docTemplate = `{
         },
         "/api/user/register": {
             "post": {
-                "description": "**Receives user payload, validate it then send it to service",
+                "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
                 ],
@@ -128,7 +536,18 @@ const docTemplate = `{
                     "Register"
                 ],
                 "summary": "Registers User",
-                "operationId": "register user",
+                "operationId": "register-user",
+                "parameters": [
+                    {
+                        "description": "Register User",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.UserPayload"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "User registered",
@@ -137,15 +556,15 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid payload",
+                        "description": "Bad request, validation error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/controllers.APIResponse"
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     }
                 }
@@ -153,7 +572,7 @@ const docTemplate = `{
         },
         "/api/user/reset": {
             "post": {
-                "description": "**Receives user payload, validate it then send it to service",
+                "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
                 ],
@@ -164,7 +583,18 @@ const docTemplate = `{
                     "Token"
                 ],
                 "summary": "Generate Password Reset Token",
-                "operationId": "reset token",
+                "operationId": "reset-token",
+                "parameters": [
+                    {
+                        "description": "Generate auth token",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.UserPayload"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Returns user",
@@ -176,6 +606,158 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/controllers.APIUserResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/rooms": {
+            "get": {
+                "description": "Retrieve all rooms and filter using query param",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rooms"
+                ],
+                "summary": "Get a room by rooms and filter by ID",
+                "operationId": "get-rooms",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID to filter",
+                        "name": "room_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Room status to filter",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Single room (if exact match)",
+                        "schema": {
+                            "$ref": "#/definitions/entities.Room"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, validation error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Bad request, room not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/verify/{room_id}": {
+            "get": {
+                "description": "Receives room_id, validates it then confirm booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "user verify booking",
+                "operationId": "verify-booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "To verify room",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking success",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/{room_i}": {
+            "get": {
+                "description": "Receives room_id then retrieves a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bookings"
+                ],
+                "summary": "get a booking",
+                "operationId": "get-booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "To get a room",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/entities.Booking"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/entities.JSONResponse"
                         }
                     }
                 }
@@ -196,6 +778,81 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/entities.User"
+                }
+            }
+        },
+        "entities.Booking": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "room_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "vender_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entities.JSONResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "error": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Room": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vender_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.RoomPayload": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "vendor": {
+                    "type": "integer"
                 }
             }
         },
@@ -230,18 +887,38 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "entities.UserPayload": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "is_vendor": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{"http"},
 	Title:            "Booking API",
-	Description:      "Booking API to perform booking CRUD operations",
+	Description:      "Booking API to make booking reservations",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
