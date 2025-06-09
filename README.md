@@ -106,9 +106,15 @@ Swagger UI is available at:
 
 6. **Prod environment**
 
-- This application runs on gcp vm with nginx as proxy.
+```bash
+    This application runs on gcp vm with nginx as proxy.
+    Access the api endpoints through
+    http:35.242.242.95/swagger/index.html
+```
 
 7. **Future Plans**
 
-- Increase the test coverage
-- Add docker containers for the application
+```bash
+    - Increase the test coverage
+    - Add docker containers for the application
+```
