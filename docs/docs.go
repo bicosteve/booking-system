@@ -398,6 +398,13 @@ const docTemplate = `{
         },
         "/api/user/login": {
             "post": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
@@ -525,6 +532,13 @@ const docTemplate = `{
         },
         "/api/user/register": {
             "post": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Receives user payload, validate it then send it to service",
                 "consumes": [
                     "application/json"
@@ -613,6 +627,13 @@ const docTemplate = `{
         },
         "/api/user/rooms": {
             "get": {
+                "security": [
+                    {
+                        "": [
+                            ""
+                        ]
+                    }
+                ],
                 "description": "Retrieve all rooms and filter using query param",
                 "consumes": [
                     "application/json"

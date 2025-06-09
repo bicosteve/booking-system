@@ -113,6 +113,17 @@ type KakfaConfig struct {
 	Broker string   `toml:"broker"`
 	Topics []string `toml:"topics"`
 	Key    string   `toml:"key"`
+	on     int      `toml:"on"`
+}
+
+type RabbitMQConfig struct {
+	Name     string `toml:"name"`
+	Host     string `toml:"host"`
+	Password string `toml:"password"`
+	User     string `toml:"user"`
+	Queue    string `toml:"queue"`
+	On       int    `toml:"on"`
+	Port     int    `toml:"port"`
 }
 
 type SecretConfig struct {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/streadway/amqp"
 )
 
 func ProducerConnect(brokerString string) (*kafka.Producer, error) {
@@ -110,6 +111,75 @@ func QPublishMessage(broker, topic, key string, data any) error {
 		Key:            []byte(key),
 		Value:          []byte(string(dataBytes)),
 	}, nil)
+
+	return nil
+}
+
+func ConnecRabbitMQBroker(qURI string) (*amqp.Connection, error) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		LogError("RABBIT BROKER: Termination signal. Exiting...", entities.ErrorLog)
+		os.Exit(1)
+
+	}()
+
+	conn, err := amqp.Dial(qURI)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
+func PublishToMQ(queue, ContentType string, data any, conn *amqp.Connection, channel *amqp.Channel) error {
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		LogError("MQ PUBLISHER: Termination signal. Exiting...", entities.ErrorLog)
+		os.Exit(1)
+
+	}()
+
+	// 1. Create a channel
+	ch, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+
+	defer ch.Close()
+
+	// 2. Declare a queue
+	_, err = ch.QueueDeclare(queue, true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	_data, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// 3. Publish the message
+	err = ch.Publish(
+		"",
+		queue,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: ContentType,
+			Body:        []byte(_data),
+		},
+	)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

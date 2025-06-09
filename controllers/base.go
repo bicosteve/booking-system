@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/redis/go-redis/v9"
+	"github.com/streadway/amqp"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
@@ -50,6 +51,9 @@ type Base struct {
 	pubkey         string
 	successURL     string
 	cancelURL      string
+	rabbitConn     *amqp.Connection
+	queueName      string
+	ctx            context.Context
 }
 
 func (b *Base) Init() {

@@ -25,11 +25,10 @@ func main() {
 
 	base.Init()
 
-	wg.Add(4)
+	wg.Add(3)
 	go base.AdminServer(&wg, "7002", "admin")
 	go base.UserServer(&wg, "7001", "user")
-	go base.Consumer(&wg, base.Topic[0])
-	go base.Consumer(&wg, base.Topic[1])
+	go base.RabbitConsumer(&wg)
 
 	defer base.DB.Close()
 

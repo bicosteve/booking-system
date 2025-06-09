@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -64,5 +65,64 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 		}
 
 	}
+
+}
+
+func (b *Base) RabbitConsumer(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	ch, err := b.rabbitConn.Channel()
+	if err != nil {
+		os.Exit(1)
+	}
+
+	defer ch.Close()
+
+	err = ch.Qos(1, 0, false)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	_, err = ch.QueueDeclare(b.queueName, true, false, false, false, nil)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	msgs, err := ch.Consume(b.queueName, "", false, false, false, false, nil)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	wkWg := &sync.WaitGroup{}
+	workers := 3
+
+	for i := 0; i < workers; i++ {
+		wkWg.Add(1)
+
+		go func(workerId int) {
+			defer wkWg.Done()
+
+			for {
+				select {
+				case <-b.ctx.Done():
+					log.Printf("Worker %d shutting down", workerId)
+					return
+				case msg, ok := <-msgs:
+					if !ok {
+						log.Printf("Worker %d channel closed", workerId)
+						return
+					}
+
+					_ = msg
+				}
+
+			}
+
+		}(i + 1)
+	}
+
+	<-b.ctx.Done()
+	wkWg.Wait()
+	log.Println("All consumer workers shut down")
 
 }

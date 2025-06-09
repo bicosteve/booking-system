@@ -16,6 +16,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
+	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v72 v72.122.0
 	github.com/swaggo/http-swagger/v2 v2.0.2
