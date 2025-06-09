@@ -91,6 +91,7 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} entities.JSONResponse "Bad request, room not found"
 // @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/rooms [get]
+// @Security []
 func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 
