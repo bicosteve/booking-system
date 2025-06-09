@@ -51,7 +51,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("Could not get user_id from context", entities.ErrorLog)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 
@@ -204,7 +204,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 6. If payment is successful, confirm booking & send sms/email
 	if pi.Status != "succeeded" {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("payment did not succeed", entities.ErrorLog)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -289,7 +289,7 @@ func (b *Base) GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("Could not get user_id from context", entities.ErrorLog)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 
