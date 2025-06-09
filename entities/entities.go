@@ -23,15 +23,16 @@ type User struct {
 }
 
 type Config struct {
-	App     AppConfig      `toml:"app"`
-	Logger  LoggerConfig   `toml:"logger"`
-	Notify  NotifyConfig   `toml:"notify"`
-	Http    []HttpConfig   `toml:"http"`
-	Mysql   []MysqlConfig  `toml:"mysql"`
-	Redis   []RedisConfig  `toml:"redis"`
-	Kafka   []KakfaConfig  `toml:"kafka"`
-	Secrets []SecretConfig `toml:"secrets"`
-	Stripe  []StripeConfig `toml:"stripe"`
+	App     AppConfig        `toml:"app"`
+	Logger  LoggerConfig     `toml:"logger"`
+	Notify  NotifyConfig     `toml:"notify"`
+	Http    []HttpConfig     `toml:"http"`
+	Mysql   []MysqlConfig    `toml:"mysql"`
+	Redis   []RedisConfig    `toml:"redis"`
+	Kafka   []KakfaConfig    `toml:"kafka"`
+	Secrets []SecretConfig   `toml:"secrets"`
+	Stripe  []StripeConfig   `toml:"stripe"`
+	Rabbit  []RabbitMQConfig `toml:"rabbit"`
 }
 
 type AppConfig struct {
@@ -113,7 +114,7 @@ type KakfaConfig struct {
 	Broker string   `toml:"broker"`
 	Topics []string `toml:"topics"`
 	Key    string   `toml:"key"`
-	on     int      `toml:"on"`
+	On     int      `toml:"on"`
 }
 
 type RabbitMQConfig struct {

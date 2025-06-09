@@ -64,6 +64,8 @@ func (b *Base) Init() {
 	var paymentTopic []string
 	var port int
 	var adminport int
+	var kafkaStatus int
+	var rabbitStatus int
 
 	config, err := app.LoadConfigs("booking_system.toml")
 	if err != nil {
@@ -74,22 +76,40 @@ func (b *Base) Init() {
 		brokerURL = kafka.Broker
 		paymentKey = kafka.Key
 		paymentTopic = kafka.Topics
+		kafkaStatus = kafka.On
 
+	}
+
+	if kafkaStatus == 1 {
+		p, err := utils.ProducerConnect(brokerURL)
+		if err != nil {
+			utils.LogError(err.Error(), entities.ErrorLog)
+			os.Exit(1)
+		}
+
+		c, err := utils.ConsumerConnect(brokerURL)
+		if err != nil {
+			utils.LogError(err.Error(), entities.ErrorLog)
+			os.Exit(1)
+		}
+
+		b.KafkaProducer = p
+		b.KafkaConsumer = c
+		b.Broker = brokerURL
+		b.Topic = paymentTopic
+		b.Key = paymentKey
+	}
+
+	for _, rabbit := range config.Rabbit {
+		rabbitStatus = rabbit.On
+	}
+
+	if rabbitStatus == 1 {
+		// Set rabbit broker test here
+		utils.ConnecRabbitMQBroker("")
 	}
 
 	err = utils.InitLogger(config.Logger.Folder)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		os.Exit(1)
-	}
-
-	p, err := utils.ProducerConnect(brokerURL)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		os.Exit(1)
-	}
-
-	c, err := utils.ConsumerConnect(brokerURL)
 	if err != nil {
 		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
@@ -145,11 +165,6 @@ func (b *Base) Init() {
 
 	b.AuthPort = strconv.Itoa(port)
 	b.AdminPort = strconv.Itoa(adminport)
-	b.KafkaProducer = p
-	b.KafkaConsumer = c
-	b.Broker = brokerURL
-	b.Topic = paymentTopic
-	b.Key = paymentKey
 
 	// Initializing user repo
 	userRepository := repo.NewDBRepository(b.DB, b.Redis)
