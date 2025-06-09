@@ -80,6 +80,8 @@ Swagger UI is available at:
 3. **Install Dependancies**
 
 ```bash
+    go mod download
+
     go mod tidy
 ```
 
@@ -94,6 +96,12 @@ Swagger UI is available at:
 ```bash
     http://localhost:7001/swagger/index.html
     http://localhost:7002/swagger/index.html
+```
+
+6. **Build the application**
+
+```bash
+    go build -o app ./cmd
 ```
 
 6. **Prod environment**

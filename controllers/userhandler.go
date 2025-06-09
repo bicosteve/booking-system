@@ -28,6 +28,7 @@ type APIResponse struct {
 // @Failure 400 {object} entities.JSONResponse "Bad request, validation error"
 // @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/register [post]
+// @Security []
 func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
@@ -76,6 +77,7 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} entities.JSONResponse "Bad Request, user not found"
 // @Failure 500 {object} entities.JSONResponse "Internal server error"
 // @Router /api/user/login [post]
+// @Security []
 func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", b.contentType)
 	var payload = new(entities.UserPayload)
