@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/streadway/amqp"
 )
 
 type User struct {
@@ -124,7 +125,12 @@ type RabbitMQConfig struct {
 	User     string `toml:"user"`
 	Queue    string `toml:"queue"`
 	On       int    `toml:"on"`
-	Port     int    `toml:"port"`
+	Port     string `toml:"port"`
+}
+
+type RabbitMQ struct {
+	Connection *amqp.Connection
+	Channel    *amqp.Channel
 }
 
 type SecretConfig struct {

@@ -25,10 +25,19 @@ func main() {
 
 	base.Init()
 
-	wg.Add(3)
+	wg.Add(5)
 	go base.AdminServer(&wg, "7002", "admin")
 	go base.UserServer(&wg, "7001", "user")
-	go base.RabbitConsumer(&wg)
+	go base.RabbitMQConsumer(&wg)
+
+	// if base.RabbitMQStatus == 1 {
+	// 	go base.RabbitConsumer(&wg)
+	// }
+
+	if base.KafkaStatus == 1 {
+		go base.Consumer(&wg, base.Topic[0])
+		go base.Consumer(&wg, base.Topic[1])
+	}
 
 	defer base.DB.Close()
 

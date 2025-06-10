@@ -54,6 +54,8 @@ type Base struct {
 	rabbitConn     *amqp.Connection
 	queueName      string
 	ctx            context.Context
+	KafkaStatus    int
+	RabbitMQStatus int
 }
 
 func (b *Base) Init() {
@@ -64,8 +66,10 @@ func (b *Base) Init() {
 	var paymentTopic []string
 	var port int
 	var adminport int
-	var kafkaStatus int
-	var rabbitStatus int
+	var mqHost string
+	var mqPassword string
+	var mqPort string
+	var mqUser string
 
 	config, err := app.LoadConfigs("booking_system.toml")
 	if err != nil {
@@ -76,11 +80,11 @@ func (b *Base) Init() {
 		brokerURL = kafka.Broker
 		paymentKey = kafka.Key
 		paymentTopic = kafka.Topics
-		kafkaStatus = kafka.On
+		b.KafkaStatus = kafka.On
 
 	}
 
-	if kafkaStatus == 1 {
+	if b.KafkaStatus == 1 {
 		p, err := utils.ProducerConnect(brokerURL)
 		if err != nil {
 			utils.LogError(err.Error(), entities.ErrorLog)
@@ -100,14 +104,27 @@ func (b *Base) Init() {
 		b.Key = paymentKey
 	}
 
-	for _, rabbit := range config.Rabbit {
-		rabbitStatus = rabbit.On
+	for _, rabbitConf := range config.Rabbit {
+		mqHost = rabbitConf.Host
+		mqPassword = rabbitConf.Password
+		mqPort = rabbitConf.Port
+		b.queueName = rabbitConf.Queue
+		mqUser = rabbitConf.User
+		b.RabbitMQStatus = rabbitConf.On
 	}
 
-	if rabbitStatus == 1 {
-		// Set rabbit broker test here
-		utils.ConnecRabbitMQBroker("")
+	if b.RabbitMQStatus == 1 {
+		url := fmt.Sprintf("amqp://%s:s%@%s:%s", mqUser, mqPassword, mqHost, mqPort)
+		conn, err := utils.NewRabbitMQConnection(url)
+		if err != nil {
+			os.Exit(1)
+		}
+
+		b.rabbitConn = conn
+
 	}
+
+	// defer b.rabbitConn.Close()
 
 	err = utils.InitLogger(config.Logger.Folder)
 	if err != nil {

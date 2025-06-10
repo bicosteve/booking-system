@@ -68,61 +68,64 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 
 }
 
-func (b *Base) RabbitConsumer(wg *sync.WaitGroup) {
+func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	ch, err := b.rabbitConn.Channel()
 	if err != nil {
+		log.Fatalf("Failed to open channel due to: %w", err)
 		os.Exit(1)
 	}
 
 	defer ch.Close()
 
-	err = ch.Qos(1, 0, false)
+	q, err := ch.QueueDeclare(
+		b.queueName,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,
+	)
+	if err != nil {
+		log.Fatalf("Failed to declare queue due to: %w", err)
+		os.Exit(1)
+	}
+
+	msgs, err := ch.Consume(
+		q.Name,
+		"",    // consumer tag
+		false, // auto-ack
+		false, // exclusive
+		false, // no-local
+		false, // no-wait
+		nil,
+	)
 	if err != nil {
 		os.Exit(1)
 	}
 
-	_, err = ch.QueueDeclare(b.queueName, true, false, false, false, nil)
-	if err != nil {
-		os.Exit(1)
-	}
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool)
 
-	msgs, err := ch.Consume(b.queueName, "", false, false, false, false, nil)
-	if err != nil {
-		os.Exit(1)
-	}
+	go func() {
+		for data := range msgs {
+			// 1. Insert into table
 
-	wkWg := &sync.WaitGroup{}
-	workers := 3
+			// 2. Just print it in the meantime
 
-	for i := 0; i < workers; i++ {
-		wkWg.Add(1)
+			fmt.Println(data.Body)
 
-		go func(workerId int) {
-			defer wkWg.Done()
+		}
+	}()
 
-			for {
-				select {
-				case <-b.ctx.Done():
-					log.Printf("Worker %d shutting down", workerId)
-					return
-				case msg, ok := <-msgs:
-					if !ok {
-						log.Printf("Worker %d channel closed", workerId)
-						return
-					}
+	go func() {
+		<-sigs
+		utils.LogError("RABBITCONSUMER: Termination signal received. Exiting", entities.ErrorLog)
+		done <- true
+	}()
 
-					_ = msg
-				}
-
-			}
-
-		}(i + 1)
-	}
-
-	<-b.ctx.Done()
-	wkWg.Wait()
-	log.Println("All consumer workers shut down")
+	utils.LogInfo("RABBITCONSUMER: Listing to queue: %s", entities.InfoLog, b.queueName)
 
 }
