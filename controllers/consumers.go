@@ -88,7 +88,7 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("Failed to declare queue due to: %w", err)
+		log.Fatal("Failed to declare queue due to: " + err.Error())
 		os.Exit(1)
 	}
 
