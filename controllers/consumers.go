@@ -73,7 +73,7 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 
 	ch, err := b.rabbitConn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open channel due to: %w", err)
+		log.Fatal("Failed to open channel due to: " + err.Error())
 		os.Exit(1)
 	}
 

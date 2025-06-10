@@ -33,7 +33,7 @@ type Config struct {
 	Kafka   []KakfaConfig    `toml:"kafka"`
 	Secrets []SecretConfig   `toml:"secrets"`
 	Stripe  []StripeConfig   `toml:"stripe"`
-	Rabbit  []RabbitMQConfig `toml:"rabbit"`
+	Rabbit  []RabbitMQConfig `toml:"rabbitmq"`
 }
 
 type AppConfig struct {
