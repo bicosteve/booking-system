@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -111,11 +112,25 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 
 	go func() {
 		for data := range msgs {
-			// 1. Insert into table
 
-			// 2. Just print it in the meantime
+			// 1. Extract the values from the data.Body
+			var trx entities.TRXPayload
 
-			fmt.Println(data.Body)
+			err = json.Unmarshal(data.Body, &trx)
+			if err != nil {
+				utils.LogError("CONSUMER: Failed to parse message body %s", entities.ErrorLog, err.Error())
+				data.Nack(false, false)
+				continue
+			}
+
+			// 2. Insert into table
+			err = b.paymentService.AddPayment(b.ctx, &trx)
+			if err != nil {
+				utils.LogError("CONSUMER: Failed to parse message body %s", entities.ErrorLog, err.Error())
+				data.Nack(false, false)
+				continue
+
+			}
 
 			// 3. Acknowledge the message so that no data is lost
 			data.Ack(false)

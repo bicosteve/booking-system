@@ -53,7 +53,7 @@ type Base struct {
 	cancelURL      string
 	rabbitConn     *amqp.Connection
 	queueName      string
-	// ctx            context.Context
+	ctx            context.Context
 	KafkaStatus    int
 	RabbitMQStatus int
 }
