@@ -83,8 +83,8 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 		b.queueName,
 		true,  // durable
 		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
+		false, // exclusive:false  multiple consumers can access this
+		false, // no-wait : mq responds allowing error checking
 		nil,
 	)
 	if err != nil {
@@ -117,15 +117,20 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 
 			fmt.Println(data.Body)
 
+			// 3. Acknowledge the message so that no data is lost
+			data.Ack(false)
+
 		}
 	}()
 
 	go func() {
 		<-sigs
-		utils.LogError("RABBITCONSUMER: Termination signal received. Exiting", entities.ErrorLog)
+		utils.LogError("RABBITCONSUMER: Termination signal received. Exiting...", entities.ErrorLog)
 		done <- true
 	}()
 
-	utils.LogInfo("RABBITCONSUMER: Listing to queue: `%s`", entities.InfoLog, b.queueName)
+	utils.LogInfo("RABBITCONSUMER: Listing to  `%s` queue", entities.InfoLog, b.queueName)
+
+	// <-done
 
 }

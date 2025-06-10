@@ -153,7 +153,7 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 		Channel:    ch,
 	}
 
-	LogInfo("RABBITMQ: connected successfully", entities.InfoLog)
+	LogInfo("RABBITMQ: Connected successfully", entities.InfoLog)
 
 	return RabbitMQClient.Connection, nil
 }
@@ -182,6 +182,9 @@ func PublishToMQ(queue string, data any) error {
 		false, // no-wait
 		nil,   // arguments
 	)
+	if err != nil {
+		return err
+	}
 
 	// 2. convert body to json format
 	body, err := json.Marshal(data)
