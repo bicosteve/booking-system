@@ -153,8 +153,6 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.LogInfo("extract username from context success", entities.InfoLog, http.StatusOK)
-
 	user, err := b.userService.SubmitProfileRequest(ctx, userName)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusNotFound)
@@ -162,7 +160,8 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	utils.LogInfo("fetch user success %d %d ", entities.InfoLog, user.ID, http.StatusOK)
+
+	utils.LogInfo("fetch user success %s %d", entities.InfoLog, user.ID, http.StatusOK)
 
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"user": user})
 	if err != nil {
@@ -170,7 +169,8 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
-	utils.LogInfo("send user success %d %d ", entities.InfoLog, user.ID, http.StatusOK)
+
+	utils.LogInfo("send user success %s %d ", entities.InfoLog, user.ID, http.StatusOK)
 }
 
 // @Summary Generate Password Reset Token

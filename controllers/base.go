@@ -53,7 +53,7 @@ type Base struct {
 	cancelURL      string
 	rabbitConn     *amqp.Connection
 	queueName      string
-	// ctx            context.Context
+	ctx            context.Context
 	KafkaStatus    int
 	RabbitMQStatus int
 }
@@ -121,10 +121,7 @@ func (b *Base) Init() {
 		}
 
 		b.rabbitConn = conn
-
 	}
-
-	// defer b.rabbitConn.Close()
 
 	err = utils.InitLogger(config.Logger.Folder)
 	if err != nil {
@@ -152,7 +149,6 @@ func (b *Base) Init() {
 		}
 
 		b.Redis = redisClient
-
 	}
 
 	for _, p := range config.Http {
@@ -169,7 +165,6 @@ func (b *Base) Init() {
 		b.mailfrom = secret.MailFrom
 		b.atklng = secret.AfricasTalking
 		b.appusername = secret.AppUsername
-
 	}
 
 	for _, _stripe := range config.Stripe {
@@ -177,7 +172,6 @@ func (b *Base) Init() {
 		b.cancelURL = _stripe.CancelURL
 		b.pubkey = _stripe.PubKey
 		b.stripesecret = _stripe.StripeSecret
-
 	}
 
 	b.AuthPort = strconv.Itoa(port)
