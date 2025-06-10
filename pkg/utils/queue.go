@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/streadway/amqp"
 )
 
 func ProducerConnect(brokerString string) (*kafka.Producer, error) {
@@ -110,6 +112,100 @@ func QPublishMessage(broker, topic, key string, data any) error {
 		Key:            []byte(key),
 		Value:          []byte(string(dataBytes)),
 	}, nil)
+
+	return nil
+}
+
+// RabbitMQ Section
+
+var RabbitMQClient *entities.RabbitMQ
+
+func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		LogError("RABBITMQ: Termination signal. Exiting...", entities.ErrorLog)
+		os.Exit(1)
+
+	}()
+
+	// 1. Connect to rabbitmq
+	conn, err := amqp.Dial(qURI)
+	if err != nil {
+		LogError("RABBITMQ: Failed to connect due to: %s", entities.ErrorLog, err)
+		log.Fatalf("RABBITMQ: Failed to connect due to: %s", err)
+		return nil, err
+	}
+
+	// 2. Open a rabbitmq channel
+	ch, err := conn.Channel()
+	if err != nil {
+		LogError("RABBITMQ: Failed to open a channel : %s", entities.ErrorLog, err)
+		log.Fatalf("RABBITMQ: Failed to open a channel : %s", err)
+		return nil, err
+	}
+
+	// 3. Store the connection & channel
+	RabbitMQClient = &entities.RabbitMQ{
+		Connection: conn,
+		Channel:    ch,
+	}
+
+	LogInfo("RABBITMQ: connected successfully", entities.InfoLog)
+
+	return RabbitMQClient.Connection, nil
+}
+
+// Send messages to RabbitMQ
+func PublishToMQ(queue string, data any) error {
+
+	var rabbitMQ entities.RabbitMQ
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		LogError("RABBITMQ PUBLISHER: Termination signal. Exiting...", entities.ErrorLog)
+		os.Exit(1)
+
+	}()
+
+	// 1. Declare a que to ensure it exists
+	q, err := rabbitMQ.Channel.QueueDeclare(
+		queue, // queue name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+
+	// 2. convert body to json format
+	body, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// 3. Publish the message to queue
+	err = rabbitMQ.Channel.Publish(
+		"",     // Exchange
+		q.Name, // routing key, here queue name
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        []byte(body),
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	LogInfo("RABBITMQ: Message sent queue %s", entities.InfoLog, body)
 
 	return nil
 }

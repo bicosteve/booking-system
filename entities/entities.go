@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/streadway/amqp"
 )
 
 type User struct {
@@ -23,15 +24,16 @@ type User struct {
 }
 
 type Config struct {
-	App     AppConfig      `toml:"app"`
-	Logger  LoggerConfig   `toml:"logger"`
-	Notify  NotifyConfig   `toml:"notify"`
-	Http    []HttpConfig   `toml:"http"`
-	Mysql   []MysqlConfig  `toml:"mysql"`
-	Redis   []RedisConfig  `toml:"redis"`
-	Kafka   []KakfaConfig  `toml:"kafka"`
-	Secrets []SecretConfig `toml:"secrets"`
-	Stripe  []StripeConfig `toml:"stripe"`
+	App     AppConfig        `toml:"app"`
+	Logger  LoggerConfig     `toml:"logger"`
+	Notify  NotifyConfig     `toml:"notify"`
+	Http    []HttpConfig     `toml:"http"`
+	Mysql   []MysqlConfig    `toml:"mysql"`
+	Redis   []RedisConfig    `toml:"redis"`
+	Kafka   []KakfaConfig    `toml:"kafka"`
+	Secrets []SecretConfig   `toml:"secrets"`
+	Stripe  []StripeConfig   `toml:"stripe"`
+	Rabbit  []RabbitMQConfig `toml:"rabbitmq"`
 }
 
 type AppConfig struct {
@@ -113,6 +115,22 @@ type KakfaConfig struct {
 	Broker string   `toml:"broker"`
 	Topics []string `toml:"topics"`
 	Key    string   `toml:"key"`
+	On     int      `toml:"on"`
+}
+
+type RabbitMQConfig struct {
+	Name     string `toml:"name"`
+	Host     string `toml:"host"`
+	Password string `toml:"password"`
+	User     string `toml:"user"`
+	Queue    string `toml:"queue"`
+	On       int    `toml:"on"`
+	Port     string `toml:"port"`
+}
+
+type RabbitMQ struct {
+	Connection *amqp.Connection
+	Channel    *amqp.Channel
 }
 
 type SecretConfig struct {

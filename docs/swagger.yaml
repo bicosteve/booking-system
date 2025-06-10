@@ -420,6 +420,9 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/entities.JSONResponse'
+      security:
+      - "":
+        - ""
       summary: Authorize User
       tags:
       - auth
@@ -500,6 +503,9 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/entities.JSONResponse'
+      security:
+      - "":
+        - ""
       summary: Registers User
       tags:
       - auth
@@ -564,6 +570,9 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/entities.JSONResponse'
+      security:
+      - "":
+        - ""
       summary: Get a room by rooms and filter by ID
       tags:
       - rooms

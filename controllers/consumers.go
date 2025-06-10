@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -64,5 +65,67 @@ func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 		}
 
 	}
+
+}
+
+func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	ch, err := b.rabbitConn.Channel()
+	if err != nil {
+		log.Fatal("Failed to open channel due to: " + err.Error())
+		os.Exit(1)
+	}
+
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		b.queueName,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,
+	)
+	if err != nil {
+		log.Fatal("Failed to declare queue due to: " + err.Error())
+		os.Exit(1)
+	}
+
+	msgs, err := ch.Consume(
+		q.Name,
+		"",    // consumer tag
+		false, // auto-ack
+		false, // exclusive
+		false, // no-local
+		false, // no-wait
+		nil,
+	)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	done := make(chan bool)
+
+	go func() {
+		for data := range msgs {
+			// 1. Insert into table
+
+			// 2. Just print it in the meantime
+
+			fmt.Println(data.Body)
+
+		}
+	}()
+
+	go func() {
+		<-sigs
+		utils.LogError("RABBITCONSUMER: Termination signal received. Exiting", entities.ErrorLog)
+		done <- true
+	}()
+
+	utils.LogInfo("RABBITCONSUMER: Listing to queue: `%s`", entities.InfoLog, b.queueName)
 
 }
