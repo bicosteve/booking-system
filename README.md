@@ -19,6 +19,7 @@ The system features seamless integration with Stripe for secure online payments.
 
 - **Golang** – Backend logic and routing
 - **Kafka** – Event-driven message processing
+- **RabbitMQ** – Event-driven message processing
 - **Stripe** – Payment processing
 - **Redis** – Caching and session management
 - **SMS & Email Integration** – Notifications and alerts
