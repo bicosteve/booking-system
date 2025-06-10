@@ -53,7 +53,7 @@ type Base struct {
 	cancelURL      string
 	rabbitConn     *amqp.Connection
 	queueName      string
-	ctx            context.Context
+	// ctx            context.Context
 	KafkaStatus    int
 	RabbitMQStatus int
 }
@@ -114,7 +114,7 @@ func (b *Base) Init() {
 	}
 
 	if b.RabbitMQStatus == 1 {
-		url := fmt.Sprintf("amqp://%s:s%@%s:%s", mqUser, mqPassword, mqHost, mqPort)
+		url := fmt.Sprintf("amqp://%s:%s@%s:%s", mqUser, mqPassword, mqHost, mqPort)
 		conn, err := utils.NewRabbitMQConnection(url)
 		if err != nil {
 			os.Exit(1)

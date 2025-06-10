@@ -73,7 +73,7 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 
 	ch, err := b.rabbitConn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open channel due to: %w", err)
+		log.Fatal("Failed to open channel due to: " + err.Error())
 		os.Exit(1)
 	}
 
@@ -88,7 +88,7 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("Failed to declare queue due to: %w", err)
+		log.Fatal("Failed to declare queue due to: " + err.Error())
 		os.Exit(1)
 	}
 
@@ -126,6 +126,6 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 		done <- true
 	}()
 
-	utils.LogInfo("RABBITCONSUMER: Listing to queue: %s", entities.InfoLog, b.queueName)
+	utils.LogInfo("RABBITCONSUMER: Listing to queue: `%s`", entities.InfoLog, b.queueName)
 
 }

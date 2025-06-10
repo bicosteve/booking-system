@@ -34,11 +34,20 @@ broker = "localhost:19092"
 name = 'kafka'
 topics = ['payment_one', 'payment_two']
 
+[[rabbitmq]]
+name = "rabbitmq"
+host = "localhost"
+password = "guest"
+user = "guest"
+queue = "transactions"
+on = 1
+port = "5672"
+
 [[http]]
 adminport = 7002
-args = {disableAuth = false}
+args = { disableAuth = false }
 contenttype = "application/json"
-cors = {allowed_method = [
+cors = { allowed_method = [
   "GET",
   "POST",
   "PUT",
@@ -52,7 +61,7 @@ cors = {allowed_method = [
   "Origin",
 ], allowed_origin = [
   "*",
-]}
+] }
 host = "0.0.0.0"
 name = "main"
 path = "/api"
