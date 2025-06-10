@@ -126,6 +126,6 @@ func (b *Base) RabbitMQConsumer(wg *sync.WaitGroup) {
 		done <- true
 	}()
 
-	utils.LogInfo("RABBITCONSUMER: Listing to queue: %s", entities.InfoLog, b.queueName)
+	utils.LogInfo("RABBITCONSUMER: Listing to queue: `%s`", entities.InfoLog, b.queueName)
 
 }
