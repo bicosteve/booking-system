@@ -71,7 +71,7 @@ func (b *Base) CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]string{"msg": "created"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -105,7 +105,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 	rooms, err := b.roomService.FindRooms(ctx)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		utils.ErrorJSON(w, errors.New("error: room id provided not found"), http.StatusNotFound)
-		utils.LogError("room not found", entities.ErrorLog, http.StatusNotFound)
+		utils.LogError("room not found %s", entities.ErrorLog, http.StatusNotFound)
 		return
 
 	}
@@ -130,7 +130,7 @@ func (b *Base) FindRoomHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		utils.ErrorJSON(w, errors.New("error: room status provided not found"), http.StatusNotFound)
-		utils.LogError("room not found", entities.ErrorLog, http.StatusNotFound)
+		utils.LogError("room not found %s", entities.ErrorLog, http.StatusNotFound)
 		return
 
 	}
@@ -168,7 +168,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	userId, _ := strconv.Atoi(userID)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting userid from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -181,7 +181,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	err = utils.SerializeJSON(w, r, &input)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	err = b.roomService.UpdateARoom(ctx, &room, roomId, userId)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 
 	}
@@ -204,7 +204,7 @@ func (b *Base) UpdateARoom(w http.ResponseWriter, r *http.Request) {
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"msg": "room updated"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -237,7 +237,7 @@ func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting userid from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -245,14 +245,14 @@ func (b *Base) DeleteARoom(w http.ResponseWriter, r *http.Request) {
 	err = b.roomService.DeleteARoom(ctx, roomId, id)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"msg": "Deleted"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

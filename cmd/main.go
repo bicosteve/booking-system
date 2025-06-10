@@ -30,10 +30,6 @@ func main() {
 	go base.UserServer(&wg, "7001", "user")
 	go base.RabbitMQConsumer(&wg)
 
-	// if base.RabbitMQStatus == 1 {
-	// 	go base.RabbitConsumer(&wg)
-	// }
-
 	if base.KafkaStatus == 1 {
 		go base.Consumer(&wg, base.Topic[0])
 		go base.Consumer(&wg, base.Topic[1])

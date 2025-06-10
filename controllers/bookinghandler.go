@@ -37,21 +37,21 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.SerializeJSON(w, r, payload)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s - %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	err = utils.ValidateBooking(payload)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s - %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError("Could not get user_id from context", entities.ErrorLog)
+		utils.LogError("BOOKING: Failed get user_id from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 
@@ -83,14 +83,14 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 1. Check if there is an active payment session or create new payment session
 	active, err := b.paymentService.GetActivePayment(ctx, userID)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	// 2. If there is an active payment i.e status='initial' --> client_secret,pub_key
 	if active.Status == "initial" {
-		utils.LogInfo("active payment ongoing", entities.InfoLog)
+		utils.LogInfo("BOOKING: Active payment ongoing", entities.InfoLog)
 		_ = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"message": "You have an active payment,confirm payment to proceed", "client_secret": active.ClientSecret, "pub_key": b.pubkey})
 		return
 
@@ -99,7 +99,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 3. Create Payment Session on Stripe Before Booking
 	PaymentSession, err := payments.CreateStripePayment(stripeConf, payDetails)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -107,7 +107,7 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 4. Store Payments In Redis
 	err = b.paymentService.HoldPayment(ctx, PaymentSession, payDetails)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -115,20 +115,12 @@ func (b *Base) CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 5. Make Booking
 	err = b.bookingService.MakeBooking(ctx, *payload)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("BOOKING: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	// 6. Publish booking payments
-	err = utils.QPublishMessage(b.Broker, b.Topic[0], b.Key, payDetails)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	// 7. Return client_secret, pubkey, room_id
+	// 6. Return client_secret, pubkey, room_id
 	_ = utils.DeserializeJSON(w, http.StatusCreated, map[string]any{"msg": "booking created", "pubkey": b.pubkey, "client_secret": PaymentSession.ClientSecret, "room_id": payload.RoomID})
 
 }
@@ -173,7 +165,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Do we have active payment?
+	// 2. Do we have active payment in Redis?
 	active, err := b.paymentService.GetActivePayment(ctx, user)
 	if err != nil {
 		utils.LogError(err.Error(), entities.ErrorLog)
@@ -183,7 +175,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. What is the status
 	if active.Status != "initial" {
-		utils.LogError("No activate payment for this user "+user, entities.ErrorLog)
+		utils.LogError("VERIFY: no active payment for d% s%", entities.ErrorLog, user_id, http.StatusBadRequest)
 		utils.ErrorJSON(w, errors.New("you do not have active payment"), http.StatusBadRequest)
 		return
 	}
@@ -191,7 +183,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 4. Fetch payment status from stripe
 	pi, err := payments.GetPaymentStatus(b.stripesecret, active.PaymentId)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("VERIFY: no payment from stripe s%", entities.ErrorLog, http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -199,10 +191,8 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// 5. Can be used to store failed transactions
 	payJSON, _ := json.Marshal(pi)
 	paylogs := string(payJSON)
-	// entities.MessageLogs.InfoLog.Println(paylogs)
 	utils.LogInfo(paylogs, entities.InfoLog)
 
-	// 6. If payment is successful, confirm booking & send sms/email
 	if pi.Status != "succeeded" {
 		utils.LogError("payment did not succeed", entities.ErrorLog)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
@@ -216,9 +206,10 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 		Status: &entities.BookingStatusConfirmed,
 	}
 
+	// 6. If payment is successful, confirm booking & send sms/email
 	err = b.bookingService.UpdateABooking(ctx, &data, booking_id)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("VERIFY: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -227,7 +218,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = b.paymentService.UpdatePayment(ctx, status, pi.ID)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("VERIFY: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -244,16 +235,29 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	err = utils.QPublishMessage(b.Broker, b.Topic[1], b.Key, trx)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		return
+	if b.KafkaStatus == 1 {
+		// Checks if kafka is switched on with 1
+		err = utils.QPublishMessage(b.Broker, b.Topic[1], b.Key, trx)
+		if err != nil {
+			utils.LogError("KAFKA: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if b.RabbitMQStatus == 1 {
+		// Only publish successful transactions
+		err = utils.PublishToMQ(b.queueName, trx)
+		if err != nil {
+			utils.LogError("RABBITMQ: Failed to publish %s - %", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
+			utils.ErrorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	err = b.paymentService.RemovePayment(ctx, user)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("VERIFY: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -282,14 +286,14 @@ func (b *Base) GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	bookingID, err := strconv.Atoi(chi.URLParam(r, "room_id"))
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
+		utils.LogError("GETBOOKING: %s %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError("Could not get user_id from context", entities.ErrorLog)
+		utils.LogError("GETBOOKING: Could not get user_id from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 
@@ -424,7 +428,7 @@ func (b *Base) UpdateBooking(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError("an error occurred", entities.ErrorLog)
+		utils.LogError("BOOKINGUPDATE: failed go get user_id from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		utils.ErrorJSON(w, errors.New("an error occured"), http.StatusInternalServerError)
 		return
 
@@ -435,7 +439,7 @@ func (b *Base) UpdateBooking(w http.ResponseWriter, r *http.Request) {
 
 	err = b.bookingService.UpdateABooking(ctx, payload, bookingID)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("BOOKINGUPDATE %s %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
@@ -472,14 +476,14 @@ func (b *Base) DeleteBooking(w http.ResponseWriter, r *http.Request) {
 
 	roomID, err := strconv.Atoi(chi.URLParam(r, "room_id"))
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("BOOKINGDELETE: %s %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
-		utils.LogError("cannot get user_id from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("cannot get user_id from context %s", entities.ErrorLog, http.StatusInternalServerError)
 		utils.ErrorJSON(w, errors.New("an error occured"), http.StatusInternalServerError)
 		return
 	}
@@ -488,7 +492,7 @@ func (b *Base) DeleteBooking(w http.ResponseWriter, r *http.Request) {
 
 	err = b.bookingService.DeleteABooking(ctx, bookingID, user_id, roomID)
 	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("BOOKINGDELETE: %s %s", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}

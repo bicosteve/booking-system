@@ -38,28 +38,28 @@ func (b *Base) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err := utils.SerializeJSON(w, r, payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error()+"(status %d)", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = utils.ValidateUser(payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = b.userService.SubmitRegistrationRequest(ctx, *payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]string{"msg": "success"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -87,20 +87,21 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err := utils.SerializeJSON(w, r, payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = utils.ValidateLogin(payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	token, err := b.userService.SubmitLoginRequest(ctx, *payload, b.jwtSecret)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -109,7 +110,7 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		err = utils.DeserializeJSON(w, http.StatusBadRequest, map[string]string{"msg": "password does not match username"})
 		if err != nil {
 			utils.ErrorJSON(w, err, http.StatusBadRequest)
-			utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+			utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 			return
 		}
 		return
@@ -120,7 +121,7 @@ func (b *Base) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]string{"token": token})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -148,7 +149,7 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	userName, ok := r.Context().Value(entities.UsernameKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting username from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting username from context %d", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -157,19 +158,19 @@ func (b *Base) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := b.userService.SubmitProfileRequest(ctx, userName)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusNotFound)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusNotFound)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusNotFound)
 		return
 
 	}
-	utils.LogInfo("fetch user success "+user.ID, entities.InfoLog, http.StatusOK)
+	utils.LogInfo("fetch user success %d %d ", entities.InfoLog, user.ID, http.StatusOK)
 
 	err = utils.DeserializeJSON(w, http.StatusOK, map[string]any{"user": user})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
-	utils.LogInfo("send user success "+user.ID, entities.InfoLog, http.StatusOK)
+	utils.LogInfo("send user success %d %d ", entities.InfoLog, user.ID, http.StatusOK)
 }
 
 // @Summary Generate Password Reset Token
@@ -190,21 +191,21 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 	userName, ok := r.Context().Value(entities.UsernameKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting username from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting username from context %d", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
 	phoneNumber, ok := r.Context().Value(entities.PhoneNumberKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting phonenumber from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting phonenumber from context %d", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
 	userID, ok := r.Context().Value(entities.UseridKeyValue).(string)
 	if !ok {
 		utils.ErrorJSON(w, errors.New("internal server error"), http.StatusInternalServerError)
-		utils.LogError("error extracting userid from context", entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("error extracting userid from context %d", entities.ErrorLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -225,27 +226,27 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 
 	if payload.Email == nil {
 		utils.ErrorJSON(w, errors.New("bad request"), http.StatusBadRequest)
-		utils.LogError("email is required field", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("email is required field %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	if *payload.Email != userName {
 		utils.ErrorJSON(w, errors.New("bad request"), http.StatusBadRequest)
-		utils.LogError("session username mismatch!", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("Session username mismatch! %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	user, err := b.userService.SubmitProfileRequest(ctx, userName)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	tkn, err := b.userService.InsertPasswordResetToken(ctx, b.DB, *user)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -257,7 +258,7 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 	err = b.userService.SubmitMessage(ctx, msg)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -266,21 +267,21 @@ func (b *Base) GenerateResetTokenHandler(w http.ResponseWriter, r *http.Request)
 	_, err = utils.SendMail(b.sengridkey, b.mailfrom, "Reset Token", *payload.Email, ujumbe)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	_, err = utils.SendSMS(b.atklng, b.appusername, phoneNumber, ujumbe)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusInternalServerError)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusInternalServerError)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"reset_tkn": tkn})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -305,7 +306,7 @@ func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	tkn := r.URL.Query().Get("token")
 	if len(tkn) < 1 {
 		utils.ErrorJSON(w, errors.New("reset token is required"), http.StatusBadRequest)
-		utils.LogError("reset token not provided", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("reset token not provided %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
@@ -317,39 +318,39 @@ func (b *Base) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	err := utils.SerializeJSON(w, r, &payload)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if *payload.Password != *payload.ConfirmPassword {
 		utils.ErrorJSON(w, errors.New("confirm password and password  mismatch"), http.StatusBadRequest)
-		utils.LogError("confirm password and password are required", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("confirm password and password are required %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	if payload.Password == nil {
 		utils.ErrorJSON(w, errors.New("password  is required"), http.StatusBadRequest)
-		utils.LogError("confirm password and password are required", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("confirm password and password are required %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	if payload.ConfirmPassword == nil {
 		utils.ErrorJSON(w, errors.New("confirm password  is required"), http.StatusBadRequest)
-		utils.LogError("confirm password and password are required", entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("confirm password and password are required %d", entities.ErrorLog, http.StatusBadRequest)
 		return
 	}
 
 	err = b.userService.SubmitPasswordResetRequest(ctx, b.DB, payload.Password, tkn)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = utils.DeserializeJSON(w, http.StatusCreated, map[string]interface{}{"msg": "password successfully reset"})
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		utils.LogError(err.Error(), entities.ErrorLog, http.StatusBadRequest)
+		utils.LogError("%s %d", entities.ErrorLog, err.Error(), http.StatusBadRequest)
 		return
 	}
 
