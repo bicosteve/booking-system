@@ -18,6 +18,9 @@ import (
 
 func (b *Base) Consumer(wg *sync.WaitGroup, topic string) {
 	defer wg.Done()
+	if b.KafkaStatus != 1 {
+		return
+	}
 
 	consumer := b.KafkaConsumer
 

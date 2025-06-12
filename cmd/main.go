@@ -30,10 +30,8 @@ func main() {
 	go base.UserServer(&wg, "7001", "user")
 	go base.RabbitMQConsumer(&wg)
 
-	if base.KafkaStatus == 1 {
-		go base.Consumer(&wg, base.Topic[0])
-		go base.Consumer(&wg, base.Topic[1])
-	}
+	go base.Consumer(&wg, base.Topic[0])
+	go base.Consumer(&wg, base.Topic[1])
 
 	defer base.DB.Close()
 
