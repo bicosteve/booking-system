@@ -1,5 +1,7 @@
 .env
-booking_system.toml
+env.dev.toml
+env.toml
 .idea
 ./pkg/stripe/example.go
 ./pkg/payments/example.go
+/bin/
