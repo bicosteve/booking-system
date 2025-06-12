@@ -70,9 +70,31 @@ func (b *Base) Init() {
 	var mqPassword string
 	var mqPort string
 	var mqUser string
+	var mqVhost string
+	var config entities.Config
 
-	config, err := app.LoadConfigs("booking_system.toml")
+	if os.Getenv("ENV") == "prod" {
+		conf, err := app.LoadConfigs("env.toml")
+		if err != nil {
+			os.Exit(1)
+		}
+
+		config = conf
+
+	} else {
+
+		conf, err := app.LoadConfigs("env.dev.toml")
+		if err != nil {
+			os.Exit(1)
+		}
+
+		config = conf
+
+	}
+
+	err := utils.InitLogger(config.Logger.Folder)
 	if err != nil {
+		utils.LogError(err.Error(), entities.ErrorLog)
 		os.Exit(1)
 	}
 
@@ -108,12 +130,22 @@ func (b *Base) Init() {
 		mqHost = rabbitConf.Host
 		mqPassword = rabbitConf.Password
 		mqPort = rabbitConf.Port
+		mqVhost = rabbitConf.Vhost
 		b.queueName = rabbitConf.Queue
 		mqUser = rabbitConf.User
 		b.RabbitMQStatus = rabbitConf.On
+
 	}
 
-	if b.RabbitMQStatus == 1 {
+	if b.RabbitMQStatus == 1 && os.Getenv("ENV") == "prod" {
+		url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", mqUser, mqPassword, mqHost, mqPort, mqVhost)
+		conn, err := utils.NewRabbitMQConnection(url)
+		if err != nil {
+			os.Exit(1)
+		}
+
+		b.rabbitConn = conn
+	} else {
 		url := fmt.Sprintf("amqp://%s:%s@%s:%s", mqUser, mqPassword, mqHost, mqPort)
 		conn, err := utils.NewRabbitMQConnection(url)
 		if err != nil {
@@ -121,12 +153,6 @@ func (b *Base) Init() {
 		}
 
 		b.rabbitConn = conn
-	}
-
-	err = utils.InitLogger(config.Logger.Folder)
-	if err != nil {
-		utils.LogError(err.Error(), entities.ErrorLog)
-		os.Exit(1)
 	}
 
 	for _, sql := range config.Mysql {

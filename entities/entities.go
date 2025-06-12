@@ -126,6 +126,7 @@ type RabbitMQConfig struct {
 	Queue    string `toml:"queue"`
 	On       int    `toml:"on"`
 	Port     string `toml:"port"`
+	Vhost    string `toml:"vhost"`
 }
 
 type RabbitMQ struct {
