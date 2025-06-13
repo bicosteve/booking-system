@@ -12,12 +12,13 @@ import (
 
 func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:         config.Address + ":" + config.Port,
-		Password:     config.Password,
-		DB:           config.Database,
-		ClientName:   config.Name,
+		Addr:     config.Address + ":" + config.Port,
+		Username: config.Name,
+		Password: config.Password,
+		DB:       config.Database,
+		// ClientName:   config.Name,
 		PoolSize:     1000,
-		PoolTimeout:  time.Second * 5,
+		PoolTimeout:  time.Second * 20,
 		MinIdleConns: 32,
 	})
 
