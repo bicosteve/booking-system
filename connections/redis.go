@@ -2,6 +2,7 @@ package connections
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"time"
 
@@ -12,12 +13,13 @@ import (
 
 func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     config.Address + ":" + config.Port,
-		Username: config.Name,
-		Password: config.Password,
-		DB:       config.Database,
-		// ClientName:   config.Name,
-		PoolSize:     1000,
+		Addr:         config.Address + ":" + config.Port,
+		Username:     config.Name,
+		Password:     config.Password,
+		DB:           config.Database,
+		TLSConfig:    &tls.Config{},
+		ClientName:   config.Name,
+		PoolSize:     100,
 		PoolTimeout:  time.Second * 20,
 		MinIdleConns: 32,
 	})

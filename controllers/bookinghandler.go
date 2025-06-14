@@ -237,7 +237,7 @@ func (b *Base) VerifyBookingHandler(w http.ResponseWriter, r *http.Request) {
 
 	if b.KafkaStatus == 1 {
 		// Checks if kafka is switched on with 1
-		err = utils.QPublishMessage(b.Broker, b.Topic[1], b.Key, trx)
+		err = utils.QPublishMessage(b.Broker, b.Topics[1], b.Key, trx)
 		if err != nil {
 			utils.LogError("KAFKA: %s %s", entities.ErrorLog, err.Error(), http.StatusInternalServerError)
 			utils.ErrorJSON(w, err, http.StatusInternalServerError)

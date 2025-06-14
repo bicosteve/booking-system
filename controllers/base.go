@@ -32,7 +32,7 @@ type Base struct {
 	AdminPort      string
 	ConsumerPort   string
 	Broker         string
-	Topic          []string
+	Topics         []string
 	Key            string
 	DB             *sql.DB
 	Redis          *redis.Client
@@ -122,7 +122,7 @@ func (b *Base) Init() {
 		b.KafkaProducer = p
 		b.KafkaConsumer = c
 		b.Broker = brokerURL
-		b.Topic = paymentTopic
+		b.Topics = paymentTopic
 		b.Key = paymentKey
 	}
 
