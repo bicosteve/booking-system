@@ -41,7 +41,7 @@
 ### 7. Run the app
 
 ```bash
-   ./bookingapp
+   ENV=prod ./bookingapp
 ```
 
 ### 8. Set up a 'systemd' service to keep the app running
@@ -77,24 +77,55 @@
 
    # settings
    server {
-     listen: 80;
-	 server_name: my-external-ip
+    listen 80;
+    server_name 35.242.242.95;
 
-	 location / {
-	   proxy_pass http://localhost:7001;
-	   proxy_set_header Host $host;
-	   proxy_set_header X-Real-IP $remote_addr;
-	 }
+    location / {
+        proxy_pass http://localhost:7001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 
-	 location /admin/{
-	   roxy_pass http://localhost:7002;
-	   proxy_set_header Host $host;
-	   proxy_set_header X-Real-IP $remote_addr;
-	 }
+    location /api/user/ {
+        proxy_pass http://localhost:7001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 
-	 location /docs/ {
-	   alias /home/bico/swagger;
-	   index index.html
-	 }
-   }
+    location /api/admin/ {
+        proxy_pass http://localhost:7002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /docs/ {
+        alias /home/bico/docs;
+        index index.html;
+    }
+}
+
+# Set active site configuration
+# 1. remove default config
+sudo rm /etc/nginx/sites-enabled/default
+
+# 2. Link your site config
+sudo ln -s /etc/nginx/sites-available/booking-app /etc/nginx/sites-enabled/
+
+# 3. Test nginx configurations
+sudo nginx -t
+
+# 3b. Expected output
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+
+# 4. Restart nginx to apply changes
+
+sudo systemctl restart nginx
+
+# 5. Check if nginx is listing to port 80
+sudo netstat -tulnp | grep :80
+
+# 5b. Expected
+tcp        0      0 0.0.0.0:80      0.0.0.0:*       LISTEN      <pid>/nginx
 ```
