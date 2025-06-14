@@ -64,6 +64,94 @@ Swagger UI is available at:
 | GET    | `/api/admin/book/all`                    | Retrieve all bookings     |
 | DELETE | `/api/admin/book/{booking_id}/{room_id}` | Delete a specific booking |
 
+### Payloads
+
+```bash
+    # 1. register --> POST
+    baseurl/user/register
+    {
+        "email":"user@gmail.com",
+        "phone_number":"0706961752",
+        "is_vendor":"NO",
+        "password":"1234",
+        "confirm_password":"1234"
+    }
+
+    # 2. login --> POST
+    baseurl/user/login
+    {
+        "email":"user@gmail.com",
+        "password":"1234",
+    }
+
+    # 3. profile --> GET
+    baseurl/user/me
+
+
+    # 4. Generate reset token --> POST
+    baseurl/user/reset
+    {
+        "email":"vendor@gmail.com"
+    }
+
+    # 5. Reset password --> POST
+    baseurl/user/password-reset?token={token}
+    {
+        "password":"12345",
+        "confirm-password":"12345"
+    }
+
+    # 6. Get Rooms --> GET
+    baseurl/user/rooms?room_id={number}&status={VACANT/BOOKED}
+
+    # 7. Create Room --> POST
+    baseurl/admin/rooms
+    {
+        "cost":"7000",
+        "status":"VACANT"
+    }
+
+    # 8. Update Room --> PUT
+    baseurl/admin/rooms/{room_id}
+    {
+        "cost":10000,
+        "status":"BOOKED"
+    }
+
+    # 9. Delete Room --> DELETE
+    baseurl/admin/rooms/{room_id}
+
+    # 10. Create a booking --> POST
+    baseurl/user/book
+    {
+        "days":5,
+        "room_id":1,
+        "amount":50000
+    }
+
+    # 11. Verify booking --> GET
+    baseurl/user/book/verify/{room_id}
+
+    # 12. Update Booking --> PUT
+    baseurl/user/book/{booking_id}
+    {
+        "days":5
+    }
+
+    # 13. Get one booking --> GET
+    baseurl/user/{booking_id}
+
+    # 14. Get all user's booking --> GET
+    baseurl/user/book/all
+
+    # 15.  Admin get property bookings --> GET
+    baseurl/admin/book/all
+
+    # 16. Admin Delete Booking --> DELETE
+    baseurl/admin/book/{room_id}/{booking_id}
+
+```
+
 ## Getting Started
 
 1. **Clone the Repository:**
@@ -108,12 +196,100 @@ Swagger UI is available at:
 6. **Prod environment**
 
 ```bash
-    This application runs on gcp vm with nginx as proxy.
-    Access the api endpoints through
-    http:35.242.242.95/swagger/index.html
+    # This application runs on gcp vm with nginx as proxy.
+    # Access the api through
+    base-url: http:35.242.242.95/api
+    user-endpoints: /user
+    admin-endpoints: /admin
+
+    # NB: Use the payloads for each respective endpoing
+    # 1. register --> POST
+    baseurl/user/register
+    {
+        "email":"user@gmail.com",
+        "phone_number":"0706961752",
+        "is_vendor":"NO",
+        "password":"1234",
+        "confirm_password":"1234"
+    }
+
+    # 2. login --> POST
+    baseurl/user/login
+    {
+        "email":"user@gmail.com",
+        "password":"1234",
+    }
+
+    # 3. profile --> GET
+    baseurl/user/me
+
+
+    # 4. Generate reset token --> POST
+    baseurl/user/reset
+    {
+        "email":"vendor@gmail.com"
+    }
+
+    # 5. Reset password --> POST
+    baseurl/user/password-reset?token={token}
+    {
+        "password":"12345",
+        "confirm-password":"12345"
+    }
+
+    # 6. Get Rooms --> GET
+    baseurl/user/rooms?room_id={number}&status={VACANT/BOOKED}
+
+    # 7. Create Room --> POST
+    baseurl/admin/rooms
+    {
+        "cost":"7000",
+        "status":"VACANT"
+    }
+
+    # 8. Update Room --> PUT
+    baseurl/admin/rooms/{room_id}
+    {
+        "cost":10000,
+        "status":"BOOKED"
+    }
+
+    # 9. Delete Room --> DELETE
+    baseurl/admin/rooms/{room_id}
+
+    # 10. Create a booking --> POST
+    baseurl/user/book
+    {
+        "days":5,
+        "room_id":1,
+        "amount":50000
+    }
+
+    # 11. Verify booking --> GET
+    baseurl/user/book/verify/{room_id}
+
+    # 12. Update Booking --> PUT
+    baseurl/user/book/{booking_id}
+    {
+        "days":5
+    }
+
+    # 13. Get one booking --> GET
+    baseurl/user/{booking_id}
+
+    # 14. Get all user's booking --> GET
+    baseurl/user/book/all
+
+    # 15.  Admin get property bookings --> GET
+    baseurl/admin/book/all
+
+    # 16. Admin Delete Booking --> DELETE
+    baseurl/admin/book/{room_id}/{booking_id}
+
+
 ```
 
-7. **Future Plans**
+8. **Future Plans**
 
 ```bash
     - Increase the test coverage
