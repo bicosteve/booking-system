@@ -24,7 +24,7 @@ func (r *Repository) CreateUser(ctx context.Context, user entities.UserPayload) 
 	q := `
 			INSERT INTO 
 			user(email,phone_number,isVender,hashed_password, created_at, 
-			updated_at, password_inserted_at) VALUES (?,?,?,?,NOW(),NOW(), NOW())
+			updated_at, password_inserted_at) VALUES(?,?,?,?,NOW(),NOW(), NOW())
 		`
 
 	stmt, err := r.db.PrepareContext(ctx, q)
