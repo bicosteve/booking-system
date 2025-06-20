@@ -29,8 +29,14 @@ The system features seamless integration with Stripe for secure online payments.
 Swagger UI is available at:
 
 ```bash
-    http://localhost:7001/swagger/index.html
-    http://localhost:7002/swagger/index.html
+    http:35.242.242.95/docs/index.html
+
+    # 1. baseurl - user
+    http://35.242.242.95/api/user/
+
+    # 2. baseurl - admin
+    http://35.242.242.95/api/admin/
+
 ```
 
 ### 🟢 Public Routes
@@ -206,7 +212,7 @@ Swagger UI is available at:
     # 1. register --> POST
     baseurl/user/register
     {
-        "email":"user@gmail.com",
+        "email":"user@domain.com",
         "phone_number":"0706961752",
         "is_vendor":"NO",
         "password":"1234",
