@@ -44,8 +44,11 @@ on:
 - CI jobs (`test`, `quality`, `security`, `performance`, `summary`) run on
   every `push` to `main`, `fix/**`, `feat/**`, and on `pull_request` targeting
   `main`.
-- `build-and-publish` runs when the event is a `push` to `main` OR a
-  `pull_request` targeting `main` (i.e. anything on the `main` line).
+- `build-and-publish` runs on the `main` line: a `push` to `main` OR a
+  `pull_request` targeting `main`. The image is always **built** (validating the
+  Dockerfile), but it is **pushed to Docker Hub only on `push` to `main`** — PRs
+  build without pushing, so an unmerged PR never clobbers the `latest` tag
+  (best practice).
 - `deploy-ec2` runs only when the event is `workflow_dispatch` AND the ref is
   `main`.
 - The workflow uses plain text status words (PASS / FAIL / SKIPPED) in
@@ -59,7 +62,8 @@ test ──┬─> quality ──┐
        └─> performance ─> summary  (if: always)
                      │
 build-and-publish (needs: test, quality, security;
-                   if: main line -> push to main OR PR to main)
+                   builds on main line -> push to main OR PR to main;
+                   pushes to Docker Hub only on push to main)
 deploy-ec2 (if: workflow_dispatch AND ref == main)
 ```
 
@@ -110,11 +114,15 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
   - Stage 2 (runtime): `debian:bookworm-slim`, install `librdkafka1`,
     `ca-certificates`; copy binary and `docs/`; `EXPOSE 7001 7002`;
     `ENV ENV=prod`; `ENTRYPOINT ["/app/bookingapp"]`.
-- `docker/setup-buildx-action`, `docker/login-action` (Docker Hub with
-  `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`), `docker/build-push-action` with
-  Buildx layer cache.
-- Tags pushed: `latest` and short git SHA (`${GITHUB_SHA::7}`).
-- After push: Trivy **image** scan (report only) into the summary.
+- `docker/setup-buildx-action`; `docker/login-action` (Docker Hub with
+  `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`) runs only when pushing;
+  `docker/build-push-action` with Buildx layer cache.
+- `push` set to `true` only on `push` to `main`
+  (`github.event_name == 'push' && github.ref == 'refs/heads/main'`);
+  on PRs the image is built with `push: false` and loaded locally for scanning.
+- Tags: `latest` and short git SHA (`${GITHUB_SHA::7}`) — applied when pushing.
+- Trivy **image** scan (report only) into the summary; on PRs it scans the
+  locally-built image, on main it scans the pushed image.
 
 ### 6. deploy-ec2 (workflow_dispatch on main only)
 - Condition: `github.event_name == 'workflow_dispatch' &&
