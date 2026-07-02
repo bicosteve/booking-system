@@ -10,3 +10,8 @@ bin/
 .env.*
 *.md
 .idea
+env.dev.toml
+*.toml
+*.md
+Makefile
+.gitignore

@@ -27,7 +27,6 @@ WORKDIR /app
 
 COPY --from=builder /out/bookingapp /app/bookingapp
 COPY --from=builder /src/docs /app/docs
-COPY --from=builder /src/env.dev.toml /app/env.dev.toml
 
 ENV ENV=prod
 
