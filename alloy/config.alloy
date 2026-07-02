@@ -42,11 +42,11 @@ loki.source.docker "booking" {
 
 loki.write "default" {
   endpoint {
-    url = sys.env("LOKI_URL")
+    url = sys.env("GRAFANA_LOKI_URL")
 
     basic_auth {
-      username = sys.env("LOKI_USERNAME")
-      password = sys.env("LOKI_PASSWORD")
+      username = sys.env("GRAFANA_LOKI_USERNAME")
+      password = sys.env("GRAFANA_LOKI_PASSWORD")
     }
   }
 }
