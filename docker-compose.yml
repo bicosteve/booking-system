@@ -1,0 +1,36 @@
+services:
+  booking-system:
+    image: bixoloo/booking-system:${IMAGE_TAG:-latest}
+    container_name: booking-system
+    restart: unless-stopped
+    env_file:
+      - booking.env
+    environment:
+      ENV: "prod"
+    ports:
+      - "7001:7001"
+      - "7002:7002"
+    networks:
+      - bookingnet
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    env_file:
+      - alloy.env
+    command:
+      - "run"
+      - "/etc/alloy/config.alloy"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+    depends_on:
+      - booking-system
+    networks:
+      - bookingnet
+
+networks:
+  bookingnet:
+    driver: bridge
