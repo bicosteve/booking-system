@@ -1,0 +1,12 @@
+.git
+.github
+docs/superpowers
+*_test.go
+coverage.out
+coverage.html
+bin/
+.env
+.env-example
+.env.*
+*.md
+.idea
