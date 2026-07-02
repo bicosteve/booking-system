@@ -294,3 +294,64 @@ jobs:
           echo "Tags: latest, ${{ steps.vars.outputs.sha }}"
           echo "Pushed: ${{ steps.push.outputs.enabled }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deploy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,alloy/config.alloy"
+          target: "~/booking"
+          overwrite: true
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          EC2_ENV_FILE: ${{ secrets.EC2_ENV_FILE }}
+          LOKI_URL: ${{ secrets.LOKI_URL }}
+          LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
+          LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,EC2_ENV_FILE,LOKI_URL,LOKI_USERNAME,LOKI_PASSWORD
+          script: |
+            set -e
+            cd ~/booking
+            # scp nests the source path; move config.alloy up if needed
+            if [ -f alloy/config.alloy ]; then cp alloy/config.alloy ./config.alloy; fi
+            printf '%s' "$EC2_ENV_FILE" > booking.env
+            {
+            echo "LOKI_URL=$LOKI_URL"
+            echo "LOKI_USERNAME=$LOKI_USERNAME"
+            echo "LOKI_PASSWORD=$LOKI_PASSWORD"
+            } > alloy.env
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            export IMAGE_TAG="${IMAGE_TAG:-latest}"
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+            docker logout
+
+      - name: Write deploy summary
+        if: always()
+        run: |
+          {
+          echo "## Deploy to EC2"
+          echo ""
+          echo "Image tag: ${{ github.event.inputs.image_tag }}"
+          echo "Result: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
