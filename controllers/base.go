@@ -74,12 +74,84 @@ func (b *Base) Init() {
 	var config entities.Config
 
 	if os.Getenv("ENV") == "prod" {
-		conf, err := app.LoadConfigs("env.toml")
-		if err != nil {
-			os.Exit(1)
-		}
 
-		config = conf
+		kafkaStatus, _ := strconv.Atoi(os.Getenv("KAFKA_STATUS"))
+		rabbitMQStatus, _ := strconv.Atoi(os.Getenv("RABBITMQ_STATUS"))
+		dbPort, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+		redisDB, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+		userPort, _ := strconv.Atoi(os.Getenv("HTTP_PORT"))
+		adminPort, _ := strconv.Atoi(os.Getenv("ADMIN_PORT"))
+
+		config = entities.Config{
+			Logger: entities.LoggerConfig{Folder: os.Getenv("LOGGER_FOLDER")},
+			Kafka: []entities.KakfaConfig{
+				{
+					Broker: os.Getenv("KAFKA_BROKER"),
+					Key:    os.Getenv("KAFKA_KEY"),
+					Topics: []string{os.Getenv("KAFKA_TOPIC")},
+					On:     kafkaStatus,
+				},
+			},
+			Rabbit: []entities.RabbitMQConfig{
+				{
+					Host:     os.Getenv("RABBIT_HOST"),
+					Port:     os.Getenv("RABBIT_PORT"),
+					User:     os.Getenv("RABBIT_USER"),
+					Password: os.Getenv("RABBIT_PASSWORD"),
+					Vhost:    os.Getenv("RABBIT_VHOST"),
+					Queue:    os.Getenv("RABBIT_QUEUE"),
+					On:       rabbitMQStatus,
+				},
+			},
+			Mysql: []entities.MysqlConfig{
+				{
+					Username: os.Getenv("DB_USER"),
+					Password: os.Getenv("DB_PASSWORD"),
+					Host:     os.Getenv("DB_HOST"),
+					Port:     dbPort,
+					Schema:   os.Getenv("DB_SCHEMA"),
+				},
+			},
+			Redis: []entities.RedisConfig{
+				{
+					Name:     os.Getenv("REDIS_NAME"),
+					Address:  os.Getenv("REDIS_ADDRESS"),
+					Port:     os.Getenv("REDIS_PORT"),
+					Password: os.Getenv("REDIS_PASSWORD"),
+					Database: redisDB,
+				},
+			},
+			Http: []entities.HttpConfig{
+				{
+					Port:        userPort,
+					AdminPort:   adminPort,
+					ContentType: os.Getenv("CONTENT_TYPE"),
+					Path:        os.Getenv("API_PATH"),
+				},
+			},
+			Secrets: []entities.SecretConfig{
+				{
+					Name:           "secrets",
+					JWT:            os.Getenv("JWT_SECRET"),
+					Sendgrid:       os.Getenv("SENDGRID_KEY"),
+					MailFrom:       os.Getenv("MAIL_FROM"),
+					AfricasTalking: os.Getenv("AT_KEY"),
+					AppUsername:    os.Getenv("APP_USERNAME"),
+					PPClientID:     os.Getenv("PP_CLIENT_ID"),
+					PPSecret:       os.Getenv("PP_SECRET"),
+					StripeSecret:   os.Getenv("STRIPE_SECRET"),
+				},
+			},
+			Stripe: []entities.StripeConfig{
+				{
+					Name:         os.Getenv("STRIPE_NAME"),
+					StripeSecret: os.Getenv("STRIPE_SECRET"),
+					PubKey:       os.Getenv("STRIPE_PUB_KEY"),
+					SuccessURL:   os.Getenv("STRIPE_SUCCESS_URL"),
+					CancelURL:    os.Getenv("STRIPE_CANCEL_URL"),
+				},
+			},
+		}
 
 	} else {
 
@@ -203,6 +275,10 @@ func (b *Base) Init() {
 	b.AuthPort = strconv.Itoa(port)
 	b.AdminPort = strconv.Itoa(adminport)
 
+	// Store the base context so background workers (e.g. the RabbitMQ consumer)
+	// have a non-nil context to pass down to the service/repo layers.
+	b.ctx = ctx
+
 	// Initializing user repo
 	userRepository := repo.NewDBRepository(b.DB, b.Redis)
 	userService := service.NewUserService(*userRepository)
@@ -267,8 +343,15 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
+	swaggerURL := ""
+	if os.Getenv("ENV") == "prod" {
+		swaggerURL = "swagger/doc.json"
+	} else {
+		swaggerURL = "http://localhost:7001/swagger/doc.json"
+	}
+
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:7001/swagger/doc.json"),
+		httpSwagger.URL(swaggerURL),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 	))
@@ -300,9 +383,15 @@ func (b *Base) adminRouter() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
+	swaggerURL := ""
+	if os.Getenv("ENV") == "prod" {
+		swaggerURL = "swagger/doc.json"
+	} else {
+		swaggerURL = "http://localhost:7001/swagger/doc.json"
+	}
 
 	router.Mount("/swagger", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:7002/swagger/doc.json"),
+		httpSwagger.URL(swaggerURL),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 	))

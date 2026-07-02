@@ -72,7 +72,7 @@ func TestRegisterHandler(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusCreated,
 			expectedBody: map[string]any{
 				"msg": "success",
 			},

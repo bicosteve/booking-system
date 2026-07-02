@@ -12,17 +12,24 @@ import (
 )
 
 func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
+	options := &redis.Options{
 		Addr:         config.Address + ":" + config.Port,
-		Username:     config.Name,
 		Password:     config.Password,
 		DB:           config.Database,
-		TLSConfig:    &tls.Config{},
 		ClientName:   config.Name,
 		PoolSize:     100,
 		PoolTimeout:  time.Second * 20,
 		MinIdleConns: 32,
-	})
+	}
+
+	// Only enable TLS for managed/remote Redis  when a password is set.
+	// A local dev Redis speaks plaintext, so forcing TLS makes the handshake
+	// hang until the dial timeout fires ("context deadline exceeded").
+	if config.Password != "" {
+		options.TLSConfig = &tls.Config{}
+	}
+
+	client := redis.NewClient(options)
 
 	pong, err := client.Ping(ctx).Result()
 	if err != nil {

@@ -36,7 +36,7 @@ func (r *Repository) CreateABooking(ctx context.Context, data entities.BookingPa
 
 	defer updateRoomSTM.Close()
 
-	insertQuery := `INSERT INTO booking(days,user_id,room_id,created_at, updated_at,status=?)VALUES (?, ?, ?, NOW(), NOW(),?)`
+	insertQuery := `INSERT INTO booking(days,user_id,room_id,status,created_at, updated_at)VALUES (?, ?, ?, ?, NOW(), NOW())`
 
 	insertRoomSTM, err := tx.PrepareContext(ctx, insertQuery)
 	if err != nil {
@@ -186,8 +186,8 @@ func (r *Repository) GetVendorBookings(ctx context.Context, vendorID int) ([]*en
 
 func (r *Repository) UpdateABooking(ctx context.Context, data *entities.BookingPayload, bookingID int) error {
 
-	q := `UPDATE booking SET days = ?, status = ?, updated_at = NOW() 
-			WHERE booking_id = ? AND user_id = ?`
+	q := `UPDATE booking SET days = ?, status = ?, updated_at = NOW()
+		  WHERE booking_id = ? AND user_id = ?`
 
 	stmt, err := r.db.PrepareContext(ctx, q)
 	if err != nil {
@@ -196,7 +196,7 @@ func (r *Repository) UpdateABooking(ctx context.Context, data *entities.BookingP
 
 	defer stmt.Close()
 
-	args := []interface{}{data.Days, bookingID, data.UserID}
+	args := []interface{}{data.Days, data.Status, bookingID, data.UserID}
 
 	_, err = stmt.ExecContext(ctx, args...)
 	if err != nil {
@@ -218,14 +218,14 @@ func (r *Repository) DeleteABooking(ctx context.Context, bookingID, vendorID, ro
 					WHERE room_id = ? and vender_id = ?`
 
 	booking_query := `DELETE FROM booking WHERE booking_id = ?`
-	room_stmt, err := r.db.PrepareContext(ctx, room_query)
+	room_stmt, err := tx.PrepareContext(ctx, room_query)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
 	defer room_stmt.Close()
 
-	booking_stmt, err := r.db.PrepareContext(ctx, booking_query)
+	booking_stmt, err := tx.PrepareContext(ctx, booking_query)
 	if err != nil {
 		_ = tx.Rollback()
 		return err
@@ -235,13 +235,13 @@ func (r *Repository) DeleteABooking(ctx context.Context, bookingID, vendorID, ro
 	_, err = room_stmt.ExecContext(ctx, roomID, vendorID)
 	if err != nil {
 		_ = tx.Rollback()
-		return nil
+		return err
 	}
 
 	_, err = booking_stmt.ExecContext(ctx, bookingID)
 	if err != nil {
 		_ = tx.Rollback()
-		return nil
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {

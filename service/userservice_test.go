@@ -330,16 +330,26 @@ func TestInsertPasswordResetToken(t *testing.T) {
 		// 	wantErr: false,
 		// },
 		{
+			name: "successful token insertion",
+			user: mockUser,
+			setupMock: func(m sqlmock.Sqlmock) {
+				q := "UPDATE user SET password_reset_token = \\?, updated_at = \\? WHERE email = \\?"
+				m.ExpectPrepare(q).
+					ExpectExec().
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), "test@gmail.com").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			wantErr: false,
+		},
+		{
 			name: "database error",
 			user: mockUser,
 			setupMock: func(m sqlmock.Sqlmock) {
 				q := "UPDATE user SET password_reset_token = \\?, updated_at = \\? WHERE email = \\?"
 				m.ExpectPrepare(q).
 					ExpectExec().
-					WithArgs("tokens", time.Now(), "test@gmail.com").
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), "test@gmail.com").
 					WillReturnError(sql.ErrConnDone)
-
-				// m.("InsertPasswordResetToken", mock.Anything, mock.AnythingOfType("string"), "test@example.com").Return(sql.ErrConnDone)
 			},
 			wantErr: true,
 		},
