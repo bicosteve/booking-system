@@ -23,15 +23,16 @@ results.
 - Prod config is read from `os.Getenv` (not a file) when `ENV=prod`. The
   container must receive these vars at runtime.
 - App listens on `7001` (user server) and `7002` (admin server).
-- Docker image repository: `<DOCKERHUB_USERNAME>/booking-system`.
+- Docker image repository: `bixoloo/booking-system`.
 
 ## Triggers
 
 ```yaml
 on:
   push:
-    branches: ["**"]
+    branches: ["main", "fix/**", "feat/**"]
   pull_request:
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       image_tag:
@@ -41,9 +42,14 @@ on:
 ```
 
 - CI jobs (`test`, `quality`, `security`, `performance`, `summary`) run on
-  `push` and `pull_request`.
-- `build-and-publish` runs only on `push` to `main`.
-- `deploy-ec2` runs only on `workflow_dispatch`.
+  every `push` to `main`, `fix/**`, `feat/**`, and on `pull_request` targeting
+  `main`.
+- `build-and-publish` runs when the event is a `push` to `main` OR a
+  `pull_request` targeting `main` (i.e. anything on the `main` line).
+- `deploy-ec2` runs only when the event is `workflow_dispatch` AND the ref is
+  `main`.
+- The workflow uses plain text status words (PASS / FAIL / SKIPPED) in
+  summaries; no emojis.
 
 ## Job Graph
 
@@ -52,8 +58,9 @@ test ──┬─> quality ──┐
        ├─> security ─┤
        └─> performance ─> summary  (if: always)
                      │
-build-and-publish (needs: test, quality, security; if: push && main)
-deploy-ec2 (if: workflow_dispatch)
+build-and-publish (needs: test, quality, security;
+                   if: main line -> push to main OR PR to main)
+deploy-ec2 (if: workflow_dispatch AND ref == main)
 ```
 
 ## Jobs
@@ -92,8 +99,10 @@ deploy-ec2 (if: workflow_dispatch)
   exist, otherwise write "No benchmarks yet — performance placeholder" to the
   summary. **Never fails.** Structured so real benchmarks can be added later.
 
-### 5. build-and-publish (main only)
-- Condition: `github.event_name == 'push' && github.ref == 'refs/heads/main'`.
+### 5. build-and-publish (main line only)
+- Condition: runs on the `main` line only, i.e.
+  `(github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+   (github.event_name == 'pull_request' && github.base_ref == 'main')`.
 - Needs: `test`, `quality`, `security`.
 - Multi-stage `Dockerfile`:
   - Stage 1 (builder): `golang:1.23-bookworm`, install `librdkafka-dev`,
@@ -107,8 +116,9 @@ deploy-ec2 (if: workflow_dispatch)
 - Tags pushed: `latest` and short git SHA (`${GITHUB_SHA::7}`).
 - After push: Trivy **image** scan (report only) into the summary.
 
-### 6. deploy-ec2 (workflow_dispatch only)
-- Condition: `github.event_name == 'workflow_dispatch'`.
+### 6. deploy-ec2 (workflow_dispatch on main only)
+- Condition: `github.event_name == 'workflow_dispatch' &&
+  github.ref == 'refs/heads/main'`.
 - Deploys via **docker compose** so the app runs with a **Grafana Alloy
   sidecar** that ships logs to Loki.
 - `appleboy/scp-action` copies `docker-compose.yml` and `alloy/config.alloy`
@@ -128,7 +138,7 @@ deploy-ec2 (if: workflow_dispatch)
 #### docker-compose.yml (deployed to EC2)
 Two services on a shared user-defined network:
 - `booking-system`: image
-  `<DOCKERHUB_USERNAME>/booking-system:${IMAGE_TAG:-latest}`, `env_file:
+  `bixoloo/booking-system:${IMAGE_TAG:-latest}`, `env_file:
   booking.env`, `environment: ENV=prod`, ports `7001:7001` and `7002:7002`,
   `restart: unless-stopped`.
 - `alloy`: image `grafana/alloy:latest`, command runs
@@ -149,15 +159,16 @@ Two services on a shared user-defined network:
 
 ### 7. summary
 - Needs: `[test, quality, security, performance]`; `if: always()`.
-- Writes a single table to `$GITHUB_STEP_SUMMARY` with ✅/❌ per job (test,
-  quality, security, performance) plus the coverage percentage, giving one
-  consolidated "summary of all the tests".
+- Writes a single table to `$GITHUB_STEP_SUMMARY` with plain-text status
+  (PASS / FAIL / SKIPPED) per job (test, quality, security, performance) plus
+  the coverage percentage, giving one consolidated "summary of all the tests".
+  No emojis.
 
 ## Required GitHub Secrets
 
 | Secret | Purpose |
 |---|---|
-| `DOCKERHUB_USERNAME` | Docker Hub login / image namespace |
+| `DOCKERHUB_USERNAME` | Docker Hub login / image namespace (value: `bixoloo`) |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
 | `EC2_HOST` | EC2 public host/IP |
 | `EC2_USER` | SSH user (e.g. `ubuntu`) |
