@@ -9,7 +9,8 @@ A single GitHub Actions workflow that runs the full CI/CD pipeline for the Go
 `booking-system` service: tests with a formatted pass/fail summary, security
 scanning, code quality + coverage reporting, a performance placeholder, Docker
 image creation, publishing to Docker Hub (main branch only), and a manual EC2
-deployment over SSH (`workflow_dispatch` only). A final job summarizes all
+deployment over SSH (`workflow_dispatch` only) that runs the app alongside a
+Grafana Alloy sidecar shipping logs to Grafana Loki. A final job summarizes all
 results.
 
 ## Constraints & Context
@@ -108,17 +109,43 @@ deploy-ec2 (if: workflow_dispatch)
 
 ### 6. deploy-ec2 (workflow_dispatch only)
 - Condition: `github.event_name == 'workflow_dispatch'`.
-- `appleboy/ssh-action` using `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`.
-- Steps on the server:
-  1. Write `EC2_ENV_FILE` secret to `~/booking.env`.
-  2. `docker login` with Docker Hub creds.
-  3. `docker pull <user>/booking-system:${{ inputs.image_tag }}` (default
-     `latest`).
-  4. `docker rm -f booking-system || true`.
-  5. `docker run -d --name booking-system --restart unless-stopped
-     --env-file ~/booking.env -e ENV=prod -p 7001:7001 -p 7002:7002 <image>`.
-  6. `docker image prune -f`.
+- Deploys via **docker compose** so the app runs with a **Grafana Alloy
+  sidecar** that ships logs to Loki.
+- `appleboy/scp-action` copies `docker-compose.yml` and `alloy/config.alloy`
+  to the server; `appleboy/ssh-action` runs the deploy using `EC2_HOST`,
+  `EC2_USER`, `EC2_SSH_KEY`.
+- Steps on the server (`~/booking/` working dir):
+  1. Receive `docker-compose.yml` and `config.alloy` (via scp).
+  2. Write `EC2_ENV_FILE` secret to `~/booking/booking.env`.
+  3. Write Loki secrets (`LOKI_URL`, `LOKI_USERNAME`, `LOKI_PASSWORD`) to
+     `~/booking/alloy.env`.
+  4. `docker login` with Docker Hub creds.
+  5. `IMAGE_TAG=${{ inputs.image_tag }} docker compose pull`.
+  6. `IMAGE_TAG=${{ inputs.image_tag }} docker compose up -d`.
+  7. `docker image prune -f`.
 - Report deployment result to the summary.
+
+#### docker-compose.yml (deployed to EC2)
+Two services on a shared user-defined network:
+- `booking-system`: image
+  `<DOCKERHUB_USERNAME>/booking-system:${IMAGE_TAG:-latest}`, `env_file:
+  booking.env`, `environment: ENV=prod`, ports `7001:7001` and `7002:7002`,
+  `restart: unless-stopped`.
+- `alloy`: image `grafana/alloy:latest`, command runs
+  `/etc/alloy/config.alloy`, `env_file: alloy.env`, volumes mount
+  `/var/run/docker.sock:/var/run/docker.sock:ro` and
+  `./config.alloy:/etc/alloy/config.alloy:ro`, `restart: unless-stopped`.
+
+#### alloy/config.alloy (committed to repo)
+- `discovery.docker` targeting the local Docker socket; relabel to keep only
+  the `booking-system` container.
+- `loki.source.docker` reads the discovered container logs and forwards to
+  `loki.write`.
+- Relabel rules add labels: `service="booking-system"`, `env="prod"`,
+  `container` name.
+- `loki.write` endpoint `url = env("LOKI_URL")` with basic auth
+  `username = env("LOKI_USERNAME")`, `password = env("LOKI_PASSWORD")`.
+  Compatible with Grafana Cloud Loki or a self-hosted Loki.
 
 ### 7. summary
 - Needs: `[test, quality, security, performance]`; `if: always()`.
@@ -136,6 +163,9 @@ deploy-ec2 (if: workflow_dispatch)
 | `EC2_USER` | SSH user (e.g. `ubuntu`) |
 | `EC2_SSH_KEY` | Private SSH key for the EC2 user |
 | `EC2_ENV_FILE` | Full prod env file contents (DB/Redis/RabbitMQ/secrets, etc.) |
+| `LOKI_URL` | Loki push endpoint (e.g. Grafana Cloud `.../loki/api/v1/push`) |
+| `LOKI_USERNAME` | Loki basic-auth user (e.g. Grafana Cloud instance/user ID) |
+| `LOKI_PASSWORD` | Loki basic-auth token/API key |
 
 ## New Files
 
@@ -143,6 +173,8 @@ deploy-ec2 (if: workflow_dispatch)
 - `Dockerfile` — multi-stage CGO build on debian-slim runtime.
 - `.dockerignore` — exclude tests, docs artifacts, git, local env files.
 - `.golangci.yml` — linter configuration.
+- `docker-compose.yml` — EC2 orchestration: booking-system + Alloy sidecar.
+- `alloy/config.alloy` — Alloy Docker log discovery → Loki pipeline.
 
 ## Non-Goals / Deferred
 
@@ -158,5 +190,7 @@ deploy-ec2 (if: workflow_dispatch)
   performance report into the summary; a final summary job aggregates results.
 - On push to `main`: a CGO image builds and publishes to Docker Hub as `latest`
   and the git SHA.
-- On manual dispatch: the chosen image tag is pulled and run on EC2 over SSH
-  with prod env vars and ports 7001/7002 exposed.
+- On manual dispatch: the chosen image tag is pulled and run on EC2 via docker
+  compose with prod env vars and ports 7001/7002 exposed, alongside a Grafana
+  Alloy sidecar that discovers the app container over the Docker socket and
+  ships its stdout/stderr logs to Grafana Loki.
