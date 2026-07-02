@@ -1,0 +1,177 @@
+name: CI-CD
+
+on:
+  push:
+    branches: ["main", "fix/**", "feat/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy to EC2"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.23"
+  IMAGE_NAME: bixoloo/booking-system
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    outputs:
+      pct: ${{ steps.cov.outputs.pct }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Run tests
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          set -o pipefail
+          "$(go env GOPATH)/bin/gotestsum" \
+            --format testname \
+            --jsonfile test-output.json \
+            --junitfile test-report.xml \
+            -- -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Build coverage report
+        if: always()
+        run: |
+          go tool cover -func=coverage.out > coverage-func.txt || true
+          go tool cover -html=coverage.out -o coverage.html || true
+
+      - name: Compute total coverage
+        id: cov
+        if: always()
+        run: |
+          PCT=$(go tool cover -func=coverage.out 2>/dev/null | awk '/^total:/ {print $3}')
+          if [ -z "$PCT" ]; then PCT="0.0%"; fi
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          echo "Total coverage: $PCT"
+
+      - name: Write test summary
+        if: always()
+        run: |
+          {
+            echo "## Test Results"
+            echo ""
+            echo "Total coverage: ${{ steps.cov.outputs.pct }}"
+            echo ""
+            echo "Per-package coverage:"
+            echo ""
+            echo '```'
+            cat coverage-func.txt 2>/dev/null || echo "no coverage data"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            coverage.html
+            coverage-func.txt
+            test-report.xml
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+          echo "All files are gofmt-formatted"
+
+      - name: Go vet
+        env:
+          CGO_ENABLED: "1"
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  performance:
+    name: Performance
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run benchmarks (placeholder)
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          if grep -rlq "^func Benchmark" --include="*_test.go" .; then
+            echo "Running benchmarks"
+            go test -run '^$' -bench=. -benchmem ./... | tee bench.txt
+          else
+            echo "No benchmarks yet - performance placeholder" | tee bench.txt
+          fi
+
+      - name: Write performance summary
+        if: always()
+        run: |
+          {
+            echo "## Performance"
+            echo ""
+            echo '```'
+            cat bench.txt 2>/dev/null || echo "no benchmark output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
