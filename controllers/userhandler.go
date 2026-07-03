@@ -16,6 +16,23 @@ type APIResponse struct {
 	Msg string
 }
 
+// TestApp godoc
+// @Summary Check status of the app
+// @Description Called when you want to check if the app is alive
+// @ID check-health
+// @Tags health
+// @Produce json
+// @Param payload body entities.UserPayload true "Register User"
+// @Success 200 {object} APIResponse "OK"
+// @Failure 500 {object} entities.JSONResponse "Internal server error"
+// @Router /api/health/test [get]
+// @Security []
+func (b *Base) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
 // RegisterAccount godoc
 // @Summary Registers User
 // @Description Receives user payload, validate it then send it to service

@@ -1,10 +1,14 @@
-name: CI-CD
+name: Booking System Workflow
 
 on:
   push:
-    branches: ["main", "fix/**", "feat/**"]
+    branches:
+      - "main"
+      - "fix/**"
+      - "feat/**"
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       image_tag:
@@ -221,7 +225,7 @@ jobs:
 
       - name: Trivy filesystem scan (report only)
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -236,9 +240,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    if: >
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'main')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -254,9 +256,9 @@ jobs:
         id: push
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-          echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Log in to Docker Hub
@@ -280,7 +282,7 @@ jobs:
 
       - name: Trivy image scan (report only)
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha }}
           severity: HIGH,CRITICAL
@@ -298,55 +300,92 @@ jobs:
           echo "Pushed: ${{ steps.push.outputs.enabled }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  deploy-ec2:
-    name: Deploy to EC2
+  deploy-vm:
+    name: Deploy to EC2 || VM
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+    if: |
+      (github.event_name == 'workflow_dispatch' )
+       && (github.ref == 'refs/heads/main')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy deploy files to EC2
+      - name: Check if the deployment dir exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22}}
+          script: |
+            set -eou pipefail
+
+            DEPLOY_DIR=${{ secrets.DEPLOY_PATH }}
+
+            if [ -d "${DEPLOY_DIR}" ]; then
+              echo "Deploy directory exists: ${DEPLOY_DIR}"
+            else
+              echo "Deploy dir does not exists. Creating one ..."
+              mkdir -p "${DEPLOY_DIR}"
+            fi
+
+            echo "Directory ready: "
+            ls -la "${DEPLOY_DIR}"
+
+      - name: Copy deployment files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22}}
           source: "docker-compose.yml,alloy/config.alloy"
-          target: "~/booking"
+          target: ${{ secrets.DEPLOY_PATH }}
           overwrite: true
 
-      - name: Deploy on EC2
+      - name: Deploy the app on EC2 || VM
         uses: appleboy/ssh-action@v1.0.3
         env:
           IMAGE_TAG: ${{ github.event.inputs.image_tag }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          EC2_ENV_FILE: ${{ secrets.EC2_ENV_FILE }}
-          LOKI_URL: ${{ secrets.LOKI_URL }}
-          LOKI_USERNAME: ${{ secrets.LOKI_USERNAME }}
-          LOKI_PASSWORD: ${{ secrets.LOKI_PASSWORD }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          GRAFANA_LOKI_URL: ${{ secrets.GRAFANA_LOKI_URL }}
+          GRAFANA_LOKI_USERNAME: ${{ secrets.GRAFANA_LOKI_USERNAME }}
+          GRAFANA_LOKI_PASSWORD: ${{ secrets.GRAFANA_LOKI_PASSWORD }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,EC2_ENV_FILE,LOKI_URL,LOKI_USERNAME,LOKI_PASSWORD
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,ENV_FILE,GRAFANA_LOKI_URL,GRAFANA_LOKI_USERNAME,GRAFANA_LOKI_PASSWORD,DEPLOY_PATH
           script: |
-            set -e
-            cd ~/booking
+            set -eou pipefail
+            cd "${DEPLOY_PATH}"
             # scp nests the source path; move config.alloy up if needed
-            if [ -f alloy/config.alloy ]; then cp alloy/config.alloy ./config.alloy; fi
-            printf '%s' "$EC2_ENV_FILE" > booking.env
+            if [ -f alloy/config.alloy ]; then
+              cp alloy/config.alloy ./config.alloy;
+            fi
+            printf '%s' "$ENV_FILE" > .env
+            chmod 600 .env
+
             {
-            echo "LOKI_URL=$LOKI_URL"
-            echo "LOKI_USERNAME=$LOKI_USERNAME"
-            echo "LOKI_PASSWORD=$LOKI_PASSWORD"
+            echo "GRAFANA_LOKI_URL=$GRAFANA_LOKI_URL"
+            echo "GRAFANA_LOKI_USERNAME=$GRAFANA_LOKI_USERNAME"
+            echo "GRAFANA_LOKI_PASSWORD=$GRAFANA_LOKI_PASSWORD"
             } > alloy.env
+
+            chmod 600 alloy.env
+
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
             export IMAGE_TAG="${IMAGE_TAG:-latest}"
+            echo "Deploying container ${IMAGE_TAG}....."
+
             docker compose pull
-            docker compose up -d
+            docker compose up -d --remove-orphans
             docker image prune -f
             docker logout
 
@@ -354,7 +393,7 @@ jobs:
         if: always()
         run: |
           {
-          echo "## Deploy to EC2"
+          echo "## Deploy to EC2 || VM"
           echo ""
           echo "Image tag: ${{ github.event.inputs.image_tag }}"
           echo "Result: ${{ job.status }}"

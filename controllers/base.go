@@ -360,6 +360,7 @@ func (b *Base) userRouter() http.Handler {
 	r.Post(b.path+"/user/register", b.RegisterHandler)
 	r.Post(b.path+"/user/login", b.LoginHandler)
 	r.Get(b.path+"/user/rooms", b.FindRoomHandler)
+	r.Get(b.path+"/health/test", b.HealthCheck)
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {

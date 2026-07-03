@@ -4,12 +4,23 @@ services:
     container_name: booking-system
     restart: unless-stopped
     env_file:
-      - booking.env
+      - .env
+
+    ports:
+      - "127.0.0.1:${PORT:-7001}:${PORT:-7001}"
+      - "127.0.0.1:${ADMIN_PORT:-7002}:${ADMIN_PORT:-7002}"
+
     environment:
       ENV: "prod"
-    ports:
-      - "7001:7001"
-      - "7002:7002"
+
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PORT:7001}/api/health/test"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
     networks:
       - bookingnet
 
@@ -28,6 +39,7 @@ services:
       - ./config.alloy:/etc/alloy/config.alloy:ro
     depends_on:
       - booking-system
+
     networks:
       - bookingnet
 
