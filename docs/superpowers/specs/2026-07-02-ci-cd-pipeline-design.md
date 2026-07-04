@@ -30,15 +30,15 @@ results.
 ```yaml
 on:
   push:
-    branches: ["main", "fix/**", "feat/**"]
+    branches: ['main', 'fix/**', 'feat/**']
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Image tag to deploy to EC2"
+        description: 'Image tag to deploy to EC2'
         required: false
-        default: "latest"
+        default: 'latest'
 ```
 
 - CI jobs (`test`, `quality`, `security`, `performance`, `summary`) run on
@@ -70,6 +70,7 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
 ## Jobs
 
 ### 1. test
+
 - Runner: `ubuntu-latest`; `actions/setup-go@v5` with Go `1.23`.
 - Install `librdkafka-dev` via apt.
 - Run `go test -race -coverprofile=coverage.out -covermode=atomic -json ./...`
@@ -82,6 +83,7 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
   artifacts.
 
 ### 2. quality
+
 - Needs: `test`.
 - `gofmt -l .` — fail if any file is unformatted.
 - `go vet ./...` — fail on suspicious constructs.
@@ -89,6 +91,7 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
 - Config file: `.golangci.yml`.
 
 ### 3. security
+
 - Needs: `test`.
 - `govulncheck ./...` — **hard fail** on known CVEs in dependencies/stdlib.
 - `gosec` (securego/gosec action) — **report only**; upload SARIF, non-blocking
@@ -98,15 +101,17 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
 - (Image-level Trivy scan happens in `build-and-publish`.)
 
 ### 4. performance
+
 - Needs: `test`.
 - Placeholder: run `go test -bench=. -benchmem -run=^$ ./...` if benchmarks
   exist, otherwise write "No benchmarks yet — performance placeholder" to the
   summary. **Never fails.** Structured so real benchmarks can be added later.
 
 ### 5. build-and-publish (main line only)
+
 - Condition: runs on the `main` line only, i.e.
   `(github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-   (github.event_name == 'pull_request' && github.base_ref == 'main')`.
+ (github.event_name == 'pull_request' && github.base_ref == 'main')`.
 - Needs: `test`, `quality`, `security`.
 - Multi-stage `Dockerfile`:
   - Stage 1 (builder): `golang:1.23-bookworm`, install `librdkafka-dev`,
@@ -125,8 +130,9 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
   locally-built image, on main it scans the pushed image.
 
 ### 6. deploy-ec2 (workflow_dispatch on main only)
+
 - Condition: `github.event_name == 'workflow_dispatch' &&
-  github.ref == 'refs/heads/main'`.
+github.ref == 'refs/heads/main'`.
 - Deploys via **docker compose** so the app runs with a **Grafana Alloy
   sidecar** that ships logs to Loki.
 - `appleboy/scp-action` copies `docker-compose.yml` and `alloy/config.alloy`
@@ -144,10 +150,12 @@ deploy-ec2 (if: workflow_dispatch AND ref == main)
 - Report deployment result to the summary.
 
 #### docker-compose.yml (deployed to EC2)
+
 Two services on a shared user-defined network:
+
 - `booking-system`: image
   `bixoloo/booking-system:${IMAGE_TAG:-latest}`, `env_file:
-  booking.env`, `environment: ENV=prod`, ports `7001:7001` and `7002:7002`,
+booking.env`, `environment: ENV=prod`, ports `7001:7001` and `7002:7002`,
   `restart: unless-stopped`.
 - `alloy`: image `grafana/alloy:latest`, command runs
   `/etc/alloy/config.alloy`, `env_file: alloy.env`, volumes mount
@@ -155,6 +163,7 @@ Two services on a shared user-defined network:
   `./config.alloy:/etc/alloy/config.alloy:ro`, `restart: unless-stopped`.
 
 #### alloy/config.alloy (committed to repo)
+
 - `discovery.docker` targeting the local Docker socket; relabel to keep only
   the `booking-system` container.
 - `loki.source.docker` reads the discovered container logs and forwards to
@@ -166,6 +175,7 @@ Two services on a shared user-defined network:
   Compatible with Grafana Cloud Loki or a self-hosted Loki.
 
 ### 7. summary
+
 - Needs: `[test, quality, security, performance]`; `if: always()`.
 - Writes a single table to `$GITHUB_STEP_SUMMARY` with plain-text status
   (PASS / FAIL / SKIPPED) per job (test, quality, security, performance) plus
@@ -174,17 +184,27 @@ Two services on a shared user-defined network:
 
 ## Required GitHub Secrets
 
-| Secret | Purpose |
+| Secret                  | Purpose                                                        |
+| ----------------------- | -------------------------------------------------------------- |
+| `DOCKERHUB_USERNAME`    | Docker Hub login / image namespace (value: `bixoloo`)          |
+| `DOCKERHUB_TOKEN`       | Docker Hub access token                                        |
+| `VM_HOST`               | EC2 public host/IP                                             |
+| `VM_USER`               | SSH user (e.g. `ubuntu`)                                       |
+| `VM_SSH_KEY`            | Private SSH key for the EC2 user                               |
+| `ENV_FILE`              | Full prod env file contents (DB/Redis/RabbitMQ/secrets, etc.)  |
+| `GRAFANA_LOKI_URL`      | Loki push endpoint (e.g. Grafana Cloud `.../loki/api/v1/push`) |
+| `GRAFANA_LOKI_USERNAME` | Loki basic-auth user (e.g. Grafana Cloud instance/user ID)     |
+| `GRAFANA_LOKI_PASSWORD` | Loki basic-auth token/API key                                 
 |---|---|
 | `DOCKERHUB_USERNAME` | Docker Hub login / image namespace (value: `bixoloo`) |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `EC2_HOST` | EC2 public host/IP |
-| `EC2_USER` | SSH user (e.g. `ubuntu`) |
-| `EC2_SSH_KEY` | Private SSH key for the EC2 user |
-| `EC2_ENV_FILE` | Full prod env file contents (DB/Redis/RabbitMQ/secrets, etc.) |
-| `LOKI_URL` | Loki push endpoint (e.g. Grafana Cloud `.../loki/api/v1/push`) |
-| `LOKI_USERNAME` | Loki basic-auth user (e.g. Grafana Cloud instance/user ID) |
-| `LOKI_PASSWORD` | Loki basic-auth token/API key |
+| `VM_HOST` | EC2 public host/IP |
+| `VM_USER` | SSH user (e.g. `ubuntu`) |
+| `VM_SSH_KEY` | Private SSH key for the EC2 user |
+| `ENV_FILE` | Full prod env file contents (DB/Redis/RabbitMQ/secrets, etc.) |
+| `GRAFANA_LOKI_URL` | Loki push endpoint (e.g. Grafana Cloud `.../loki/api/v1/push`) |
+| `GRAFANA_LOKI_USERNAME` | Loki basic-auth user (e.g. Grafana Cloud instance/user ID) |
+| `GRAFANA_LOKI_PASSWORD` | Loki basic-auth token/API key |
 
 ## New Files
 

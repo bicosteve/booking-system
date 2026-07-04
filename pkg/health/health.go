@@ -32,9 +32,14 @@ type Report struct {
 	Checks []Result `json:"checks"`
 }
 
-// Check runs each checker's Ping (bounded by a per-checker 2s timeout derived
-// from ctx) and returns a Report. Overall Status is "healthy" iff every
-// enabled checker is "up". Disabled checkers are not executed.
+// checkTimeout is the per-checker probe budget. Some auth failures take ~3s
+// to surface (e.g. RabbitMQ 403), so 2s would cut them off and hide the real
+// error behind a generic "context deadline exceeded".
+const checkTimeout = 5 * time.Second
+
+// Check runs each checker's Ping (bounded by checkTimeout) and returns a
+// Report. Overall Status is "healthy" iff every enabled checker is "up".
+// Disabled checkers are not executed.
 func Check(ctx context.Context, checkers []Checker) Report {
 	report := Report{Checks: make([]Result, 0, len(checkers))}
 	healthy := true
@@ -51,7 +56,7 @@ func Check(ctx context.Context, checkers []Checker) Report {
 			errMsg = "ping function not configured"
 			healthy = false
 		} else {
-			pingCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			pingCtx, cancel := context.WithTimeout(ctx, checkTimeout)
 			err := c.Ping(pingCtx)
 			cancel()
 			if err != nil {
@@ -72,26 +77,34 @@ func Check(ctx context.Context, checkers []Checker) Report {
 }
 
 // Await calls Check every interval until all enabled checkers are up or
-// timeout elapses. Returns nil once healthy; on timeout returns an error
-// summarizing the failing checkers. Respects ctx cancellation.
+// timeout elapses. Returns nil once healthy. On timeout it returns an error
+// summarizing the failing checkers by name (never a bare "context deadline
+// exceeded"), so callers can see which dependency is down. Respects ctx
+// cancellation; if ctx is itself a timeout context the timeout still surfaces
+// as the informative summary.
 func Await(ctx context.Context, checkers []Checker, interval, timeout time.Duration) error {
 	if len(checkers) == 0 {
 		return nil
 	}
 	deadline := time.Now().Add(timeout)
+	failing := func(last Report) error {
+		return fmt.Errorf("dependencies not ready after %s: %s", timeout, summarize(last))
+	}
 	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		last := Check(ctx, checkers)
 		if last.Status == "healthy" {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("dependencies not ready after %s: %s", timeout, summarize(last))
+			return failing(last)
 		}
 		select {
 		case <-ctx.Done():
+			// If the deadline expired (including via a timeout context),
+			// prefer the informative summary over the raw context error.
+			if time.Now().After(deadline) {
+				return failing(last)
+			}
 			return ctx.Err()
 		case <-time.After(interval):
 		}

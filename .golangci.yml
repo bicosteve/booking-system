@@ -1,23 +1,26 @@
+version: "2"
+
 run:
-timeout: 5m
-tests: true
+  timeout: 5m
+  tests: true
 
 linters:
-disable-all: true
-enable:
-- errcheck
-- gosimple
-- govet
-- ineffassign
-- staticcheck
-- unused
-- gofmt
-- misspell
+  default: none
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - misspell
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
 
 issues:
-exclude-rules:
-- path: _test\.go
-  linters:
-  - errcheck
-max-issues-per-linter: 0
-max-same-issues: 0
+  max-issues-per-linter: 0
+  max-same-issues: 0

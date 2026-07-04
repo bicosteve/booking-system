@@ -111,3 +111,19 @@ func TestAwait_EmptyCheckers(t *testing.T) {
 	err := Await(context.Background(), nil, 10*time.Millisecond, 100*time.Millisecond)
 	assert.NoError(t, err)
 }
+
+// TestAwait_TimeoutCtx_NamesFailingDep reproduces the real bug seen in
+// waitForDependencies: when the caller passes a timeout context (as
+// startup does) and a checker stays down, Await must return a summary
+// naming the failing dependency rather than a bare "context deadline
+// exceeded".
+func TestAwait_TimeoutCtx_NamesFailingDep(t *testing.T) {
+	c := Checker{Name: "rabbitmq", Ping: func(context.Context) error { return errors.New("not allowed") }}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Millisecond)
+	defer cancel()
+	err := Await(ctx, []Checker{c}, 10*time.Millisecond, 60*time.Millisecond)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "rabbitmq")
+	assert.Contains(t, err.Error(), "not ready after")
+	assert.NotContains(t, err.Error(), "context deadline exceeded")
+}

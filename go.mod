@@ -1,6 +1,8 @@
 module github.com/bicosteve/booking-system
 
-go 1.23.0
+go 1.25.0
+
+toolchain go1.25.11
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -11,10 +13,10 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.3
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.10.0

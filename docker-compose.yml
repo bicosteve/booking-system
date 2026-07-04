@@ -15,11 +15,17 @@ services:
 
     healthcheck:
       test:
-        ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PORT:-7001}/api/health/test"]
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:${PORT:-7001}/api/health/test",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 60s
+
+    volumes:
+      - ./certs/aiven-kafka-ca.pem:/app/certs/aiven-kafka-ca.pem:ro
 
     networks:
       - bookingnet
