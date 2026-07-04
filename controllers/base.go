@@ -129,6 +129,7 @@ func (b *Base) Init() {
 					Port:     os.Getenv("REDIS_PORT"),
 					Password: os.Getenv("REDIS_PASSWORD"),
 					Database: redisDB,
+					TLS:      envBool("REDIS_TLS", os.Getenv("ENV") == "prod"),
 				},
 			},
 			Http: []entities.HttpConfig{
