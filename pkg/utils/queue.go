@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -135,7 +134,6 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 	conn, err := amqp.Dial(qURI)
 	if err != nil {
 		LogError("RABBITMQ: Failed to connect due to: %s", entities.ErrorLog, err)
-		log.Fatalf("RABBITMQ: Failed to connect due to: %s", err)
 		return nil, err
 	}
 
@@ -143,7 +141,6 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		LogError("RABBITMQ: Failed to open a channel : %s", entities.ErrorLog, err)
-		log.Fatalf("RABBITMQ: Failed to open a channel : %s", err)
 		return nil, err
 	}
 
