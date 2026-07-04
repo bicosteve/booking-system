@@ -8,12 +8,11 @@ linters:
   default: none
   enable:
     - errcheck
-    - gosimple
     - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - misspell
+      - ineffassign
+      - staticcheck
+      - unused
+      - misspell
   exclusions:
     rules:
       - path: _test\.go
