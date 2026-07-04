@@ -3,7 +3,9 @@ package health
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -70,4 +72,42 @@ func TestCheck_NilPing(t *testing.T) {
 	assert.Equal(t, "unhealthy", r.Status)
 	assert.Equal(t, "down", r.Checks[0].Status)
 	assert.Contains(t, r.Checks[0].Error, "ping function not configured")
+}
+
+func TestAwait_SuccessAfterRetries(t *testing.T) {
+	var mu sync.Mutex
+	calls := 0
+	c := Checker{Name: "mysql", Ping: func(context.Context) error {
+		mu.Lock()
+		defer mu.Unlock()
+		calls++
+		if calls < 3 {
+			return errors.New("not ready")
+		}
+		return nil
+	}}
+	err := Await(context.Background(), []Checker{c}, 10*time.Millisecond, 2*time.Second)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, calls, 3)
+}
+
+func TestAwait_Timeout(t *testing.T) {
+	c := Checker{Name: "mysql", Ping: func(context.Context) error { return errors.New("nope") }}
+	err := Await(context.Background(), []Checker{c}, 10*time.Millisecond, 50*time.Millisecond)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not ready after")
+	assert.Contains(t, err.Error(), "mysql")
+}
+
+func TestAwait_CancelledContext(t *testing.T) {
+	c := Checker{Name: "mysql", Ping: func(context.Context) error { return errors.New("nope") }}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := Await(ctx, []Checker{c}, 10*time.Millisecond, 200*time.Millisecond)
+	assert.Error(t, err)
+}
+
+func TestAwait_EmptyCheckers(t *testing.T) {
+	err := Await(context.Background(), nil, 10*time.Millisecond, 100*time.Millisecond)
+	assert.NoError(t, err)
 }

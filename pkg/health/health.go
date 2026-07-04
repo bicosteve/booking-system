@@ -2,6 +2,8 @@ package health
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -67,4 +69,44 @@ func Check(ctx context.Context, checkers []Checker) Report {
 		report.Status = "unhealthy"
 	}
 	return report
+}
+
+// Await calls Check every interval until all enabled checkers are up or
+// timeout elapses. Returns nil once healthy; on timeout returns an error
+// summarizing the failing checkers. Respects ctx cancellation.
+func Await(ctx context.Context, checkers []Checker, interval, timeout time.Duration) error {
+	if len(checkers) == 0 {
+		return nil
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		last := Check(ctx, checkers)
+		if last.Status == "healthy" {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("dependencies not ready after %s: %s", timeout, summarize(last))
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(interval):
+		}
+	}
+}
+
+func summarize(r Report) string {
+	var downs []string
+	for _, c := range r.Checks {
+		if c.Status == "down" {
+			downs = append(downs, c.Name)
+		}
+	}
+	if len(downs) == 0 {
+		return "no details"
+	}
+	return "down: " + strings.Join(downs, ", ")
 }
