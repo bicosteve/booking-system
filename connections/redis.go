@@ -11,26 +11,25 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
-	options := &redis.Options{
-		Addr:         config.Address + ":" + config.Port,
-		Password:     config.Password,
-		DB:           config.Database,
-		ClientName:   config.Name,
+func redisOptions(cfg entities.RedisConfig) *redis.Options {
+	var tlsConfig *tls.Config
+	if cfg.TLS {
+		tlsConfig = &tls.Config{ServerName: cfg.Address}
+	}
+	return &redis.Options{
+		Addr:         cfg.Address + ":" + cfg.Port,
+		Password:     cfg.Password,
+		DB:           cfg.Database,
+		ClientName:   cfg.Name,
 		PoolSize:     100,
 		PoolTimeout:  time.Second * 20,
 		MinIdleConns: 32,
+		TLSConfig:    tlsConfig,
 	}
+}
 
-	// Only enable TLS for managed/remote Redis  when a password is set.
-	// A local dev Redis speaks plaintext, so forcing TLS makes the handshake
-	// hang until the dial timeout fires ("context deadline exceeded").
-	if config.Password != "" {
-		options.TLSConfig = &tls.Config{}
-	}
-
-	client := redis.NewClient(options)
-
+func NewRedisDB(ctx context.Context, cfg entities.RedisConfig) (*redis.Client, error) {
+	client := redis.NewClient(redisOptions(cfg))
 	pong, err := client.Ping(ctx).Result()
 	if err != nil {
 		return nil, err

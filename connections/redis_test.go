@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// NewRedisDB only enables TLS when a password is configured. A local/dev Redis
-// (no password) connects over plaintext, so a connection to a plaintext miniredis
-// server should succeed.
+// NewRedisDB enables TLS only when cfg.TLS is set. A local/dev Redis (TLS off)
+// connects over plaintext, so a connection to a plaintext miniredis server
+// should succeed.
 
 func TestNewRedisDB_PlaintextServerSucceeds(t *testing.T) {
 	mr, err := miniredis.Run()
@@ -42,8 +42,8 @@ func TestNewRedisDB_PlaintextServerSucceeds(t *testing.T) {
 }
 
 func TestNewRedisDB_TLSAgainstPlaintextFails(t *testing.T) {
-	// When a password is set, TLS is enabled. A plaintext miniredis cannot
-	// complete the TLS handshake, so Ping fails.
+	// With TLS explicitly enabled, a plaintext miniredis cannot complete the
+	// TLS handshake, so Ping fails.
 	mr, err := miniredis.Run()
 	if err != nil {
 		t.Fatalf("failed to start mini redis: %v", err)
@@ -57,6 +57,7 @@ func TestNewRedisDB_TLSAgainstPlaintextFails(t *testing.T) {
 		Password: "somepassword",
 		Database: 0,
 		Name:     "test-redis",
+		TLS:      true,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -65,6 +66,21 @@ func TestNewRedisDB_TLSAgainstPlaintextFails(t *testing.T) {
 	client, err := NewRedisDB(ctx, config)
 	assert.Error(t, err)
 	assert.Nil(t, client)
+}
+
+func TestRedisOptions_NoTLS(t *testing.T) {
+	opts := redisOptions(entities.RedisConfig{Address: "127.0.0.1", Port: "6379", Password: "x", Name: "n"})
+	assert.Nil(t, opts.TLSConfig)
+	assert.Equal(t, "127.0.0.1:6379", opts.Addr)
+	assert.Equal(t, "x", opts.Password)
+	assert.Equal(t, "n", opts.ClientName)
+}
+
+func TestRedisOptions_TLS(t *testing.T) {
+	opts := redisOptions(entities.RedisConfig{Address: "us1-x.upstash.io", Port: "6379", TLS: true})
+	if assert.NotNil(t, opts.TLSConfig) {
+		assert.Equal(t, "us1-x.upstash.io", opts.TLSConfig.ServerName)
+	}
 }
 
 func TestNewRedisDB_UnreachableHost(t *testing.T) {
