@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -208,4 +210,49 @@ func PublishToMQ(queue string, data any) error {
 	LogInfo("RABBITMQ: Message sent queue %s", entities.InfoLog, body)
 
 	return nil
+}
+
+// KafkaConfigMap builds a librdkafka ConfigMap from an entity config.
+// Plaintext when cfg.SecurityProtocol is empty; SASL_SSL + SCRAM otherwise.
+func KafkaConfigMap(cfg entities.KakfaConfig) *kafka.ConfigMap {
+	cm := &kafka.ConfigMap{"bootstrap.servers": cfg.Broker}
+	if cfg.SecurityProtocol == "" {
+		return cm
+	}
+	_ = cm.SetKey("security.protocol", cfg.SecurityProtocol)
+	mech := cfg.SaslMechanism
+	if mech == "" {
+		mech = "SCRAM-SHA-256"
+	}
+	_ = cm.SetKey("sasl.mechanisms", mech)
+	_ = cm.SetKey("sasl.username", cfg.SaslUsername)
+	_ = cm.SetKey("sasl.password", cfg.SaslPassword)
+	if cfg.CaLocation != "" {
+		_ = cm.SetKey("ssl.ca.location", cfg.CaLocation)
+	} else if cfg.CaPem != "" {
+		_ = cm.SetKey("ssl.ca.pem", cfg.CaPem)
+	}
+	return cm
+}
+
+// RabbitTLSConfig returns nil when rb.TLS is false; otherwise a *tls.Config with
+// ServerName set and RootCAs populated from CaLocation (file) or CaPem (inline)
+// when provided. Empty CA => system roots (public-CA brokers).
+func RabbitTLSConfig(rb entities.RabbitMQConfig) *tls.Config {
+	if !rb.TLS {
+		return nil
+	}
+	cfg := &tls.Config{ServerName: rb.Host}
+	pool := x509.NewCertPool()
+	switch {
+	case rb.CaLocation != "":
+		if b, err := os.ReadFile(rb.CaLocation); err == nil && pool.AppendCertsFromPEM(b) {
+			cfg.RootCAs = pool
+		}
+	case rb.CaPem != "":
+		if pool.AppendCertsFromPEM([]byte(rb.CaPem)) {
+			cfg.RootCAs = pool
+		}
+	}
+	return cfg
 }
