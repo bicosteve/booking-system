@@ -87,10 +87,16 @@ func (b *Base) Init() {
 			Logger: entities.LoggerConfig{Folder: os.Getenv("LOGGER_FOLDER")},
 			Kafka: []entities.KakfaConfig{
 				{
-					Broker: os.Getenv("KAFKA_BROKER"),
-					Key:    os.Getenv("KAFKA_KEY"),
-					Topics: []string{os.Getenv("KAFKA_TOPIC")},
-					On:     kafkaStatus,
+					Broker:           os.Getenv("KAFKA_BROKER"),
+					Key:              os.Getenv("KAFKA_KEY"),
+					Topics:           []string{os.Getenv("KAFKA_TOPIC")},
+					On:               kafkaStatus,
+					SecurityProtocol: os.Getenv("KAFKA_SECURITY_PROTOCOL"),
+					SaslMechanism:    os.Getenv("KAFKA_SASL_MECHANISM"),
+					SaslUsername:     os.Getenv("KAFKA_SASL_USERNAME"),
+					SaslPassword:     os.Getenv("KAFKA_SASL_PASSWORD"),
+					CaPem:            os.Getenv("KAFKA_CA_PEM"),
+					CaLocation:       os.Getenv("KAFKA_CA_LOCATION"),
 				},
 			},
 			Rabbit: []entities.RabbitMQConfig{
@@ -183,17 +189,18 @@ func (b *Base) Init() {
 		paymentKey = kafka.Key
 		paymentTopic = kafka.Topics
 		b.KafkaStatus = kafka.On
+		b.kafkaCfg = kafka
 
 	}
 
 	if b.KafkaStatus == 1 {
-		p, err := utils.ProducerConnect(brokerURL)
+		p, err := utils.ProducerConnect(b.kafkaCfg)
 		if err != nil {
 			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
-		c, err := utils.ConsumerConnect(brokerURL)
+		c, err := utils.ConsumerConnect(b.kafkaCfg)
 		if err != nil {
 			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)

@@ -16,7 +16,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func ProducerConnect(brokerString string) (*kafka.Producer, error) {
+func ProducerConnect(cfg entities.KakfaConfig) (*kafka.Producer, error) {
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -28,10 +28,9 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 
 	}()
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": brokerString,
-		"acks":              "all",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("acks", "all")
+	p, err := kafka.NewProducer(cm)
 
 	if err != nil {
 		LogError("PRODUCER: Could not connect to broker becasue: "+err.Error(), entities.ErrorLog)
@@ -43,7 +42,7 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 	return p, nil
 }
 
-func ConsumerConnect(broker string) (*kafka.Consumer, error) {
+func ConsumerConnect(cfg entities.KakfaConfig) (*kafka.Consumer, error) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -54,11 +53,10 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 
 	}()
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": broker,
-		"group.id":          "kafka-go-getting-started",
-		"auto.offset.reset": "earliest",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("group.id", "kafka-go-getting-started")
+	_ = cm.SetKey("auto.offset.reset", "earliest")
+	c, err := kafka.NewConsumer(cm)
 
 	if err != nil {
 		LogError("CONSUMER: Could not connect due to "+err.Error(), entities.ErrorLog)
@@ -70,12 +68,11 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	return c, nil
 }
 
-func QPublishMessage(broker, topic, key string, data any) error {
+func QPublishMessage(cfg entities.KakfaConfig, topic, key string, data any) error {
 	wg := &sync.WaitGroup{}
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": broker,
-		"acks":              "all",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("acks", "all")
+	p, err := kafka.NewProducer(cm)
 
 	if err != nil {
 		LogError(err.Error(), entities.ErrorLog)
