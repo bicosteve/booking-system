@@ -121,7 +121,7 @@ func QPublishMessage(broker, topic, key string, data any) error {
 
 var RabbitMQClient *entities.RabbitMQ
 
-func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
+func NewRabbitMQConnection(qURI string, tlsConfig *tls.Config) (*amqp.Connection, error) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -133,7 +133,13 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 	}()
 
 	// 1. Connect to rabbitmq
-	conn, err := amqp.Dial(qURI)
+	var conn *amqp.Connection
+	var err error
+	if tlsConfig != nil {
+		conn, err = amqp.DialTLS(qURI, tlsConfig)
+	} else {
+		conn, err = amqp.Dial(qURI)
+	}
 	if err != nil {
 		LogError("RABBITMQ: Failed to connect due to: %s", entities.ErrorLog, err)
 		return nil, err

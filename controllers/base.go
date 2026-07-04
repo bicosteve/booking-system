@@ -72,11 +72,6 @@ func (b *Base) Init() {
 	var paymentTopic []string
 	var port int
 	var adminport int
-	var mqHost string
-	var mqPassword string
-	var mqPort string
-	var mqUser string
-	var mqVhost string
 	var config entities.Config
 
 	if os.Getenv("ENV") == "prod" {
@@ -100,13 +95,16 @@ func (b *Base) Init() {
 			},
 			Rabbit: []entities.RabbitMQConfig{
 				{
-					Host:     os.Getenv("RABBITMQ_HOST"),
-					Port:     os.Getenv("RABBITMQ_PORT"),
-					User:     os.Getenv("RABBITMQ_USER"),
-					Password: os.Getenv("RABBITMQ_PASSWORD"),
-					Vhost:    os.Getenv("RABBITMQ_VHOST"),
-					Queue:    os.Getenv("RABBITMQ_QUEUE"),
-					On:       rabbitMQStatus,
+					Host:       os.Getenv("RABBITMQ_HOST"),
+					Port:       os.Getenv("RABBITMQ_PORT"),
+					User:       os.Getenv("RABBITMQ_USER"),
+					Password:   os.Getenv("RABBITMQ_PASSWORD"),
+					Vhost:      os.Getenv("RABBITMQ_VHOST"),
+					Queue:      os.Getenv("RABBITMQ_QUEUE"),
+					On:         rabbitMQStatus,
+					TLS:        envBool("RABBIT_TLS", false),
+					CaPem:      os.Getenv("RABBIT_CA_PEM"),
+					CaLocation: os.Getenv("RABBIT_CA_LOCATION"),
 				},
 			},
 			Mysql: []entities.MysqlConfig{
@@ -209,35 +207,24 @@ func (b *Base) Init() {
 	}
 
 	for _, rabbitConf := range config.Rabbit {
-		mqHost = rabbitConf.Host
-		mqPassword = rabbitConf.Password
-		mqPort = rabbitConf.Port
-		mqVhost = rabbitConf.Vhost
 		b.queueName = rabbitConf.Queue
-		mqUser = rabbitConf.User
 		b.RabbitMQStatus = rabbitConf.On
+		b.rabbitCfg = rabbitConf
 
 	}
 
-	if b.RabbitMQStatus == 1 && os.Getenv("ENV") == "prod" {
-		url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", mqUser, mqPassword, mqHost, mqPort, mqVhost)
+	if b.RabbitMQStatus == 1 {
+		url := rabbitURL(b.rabbitCfg)
 		b.rabbitURL = url
-		conn, err := utils.NewRabbitMQConnection(url)
+		conn, err := utils.NewRabbitMQConnection(url, utils.RabbitTLSConfig(b.rabbitCfg))
 		if err != nil {
-			os.Exit(1)
-		}
-
-		b.rabbitConn = conn
-	} else {
-		url := fmt.Sprintf("amqp://%s:%s@%s:%s", mqUser, mqPassword, mqHost, mqPort)
-		b.rabbitURL = url
-		conn, err := utils.NewRabbitMQConnection(url)
-		if err != nil {
+			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
 		b.rabbitConn = conn
 	}
+	// else: RabbitMQ disabled — no dial, no exit.
 
 	for _, sql := range config.Mysql {
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", sql.Username, sql.Password, sql.Host, sql.Port, sql.Schema)
