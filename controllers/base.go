@@ -13,6 +13,7 @@ import (
 	"github.com/bicosteve/booking-system/connections"
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/app"
+	"github.com/bicosteve/booking-system/pkg/health"
 	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/bicosteve/booking-system/repo"
 	"github.com/bicosteve/booking-system/service"
@@ -53,9 +54,12 @@ type Base struct {
 	cancelURL      string
 	rabbitConn     *amqp.Connection
 	queueName      string
-	ctx            context.Context
-	KafkaStatus    int
-	RabbitMQStatus int
+	rabbitURL      string
+	// checkersProvider is overridden in tests; nil means use defaultLiveCheckers(). Used by HealthCheck.
+	checkersProvider func() []health.Checker
+	ctx              context.Context
+	KafkaStatus      int
+	RabbitMQStatus   int
 }
 
 func (b *Base) Init() {
@@ -170,6 +174,10 @@ func (b *Base) Init() {
 		os.Exit(1)
 	}
 
+	// Wait for backing services to be reachable before connecting, so the app
+	// doesn't exit when docker-compose services come up at different times.
+	b.waitForDependencies(config)
+
 	for _, kafka := range config.Kafka {
 		brokerURL = kafka.Broker
 		paymentKey = kafka.Key
@@ -211,6 +219,7 @@ func (b *Base) Init() {
 
 	if b.RabbitMQStatus == 1 && os.Getenv("ENV") == "prod" {
 		url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", mqUser, mqPassword, mqHost, mqPort, mqVhost)
+		b.rabbitURL = url
 		conn, err := utils.NewRabbitMQConnection(url)
 		if err != nil {
 			os.Exit(1)
@@ -219,6 +228,7 @@ func (b *Base) Init() {
 		b.rabbitConn = conn
 	} else {
 		url := fmt.Sprintf("amqp://%s:%s@%s:%s", mqUser, mqPassword, mqHost, mqPort)
+		b.rabbitURL = url
 		conn, err := utils.NewRabbitMQConnection(url)
 		if err != nil {
 			os.Exit(1)
