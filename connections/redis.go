@@ -11,19 +11,25 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRedisDB(ctx context.Context, config entities.RedisConfig) (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:         config.Address + ":" + config.Port,
-		Username:     config.Name,
-		Password:     config.Password,
-		DB:           config.Database,
-		TLSConfig:    &tls.Config{},
-		ClientName:   config.Name,
+func redisOptions(cfg entities.RedisConfig) *redis.Options {
+	var tlsConfig *tls.Config
+	if cfg.TLS {
+		tlsConfig = &tls.Config{ServerName: cfg.Address}
+	}
+	return &redis.Options{
+		Addr:         cfg.Address + ":" + cfg.Port,
+		Password:     cfg.Password,
+		DB:           cfg.Database,
+		ClientName:   cfg.Name,
 		PoolSize:     100,
 		PoolTimeout:  time.Second * 20,
 		MinIdleConns: 32,
-	})
+		TLSConfig:    tlsConfig,
+	}
+}
 
+func NewRedisDB(ctx context.Context, cfg entities.RedisConfig) (*redis.Client, error) {
+	client := redis.NewClient(redisOptions(cfg))
 	pong, err := client.Ping(ctx).Result()
 	if err != nil {
 		return nil, err

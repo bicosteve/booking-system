@@ -129,3 +129,30 @@ sudo netstat -tulnp | grep :80
 # 5b. Expected
 tcp        0      0 0.0.0.0:80      0.0.0.0:*       LISTEN      <pid>/nginx
 ```
+
+---
+
+## Production managed services
+
+The app reads `ENV=prod` config from environment variables (see `controllers/base.go`).
+For the production managed-service stack set these on the EC2 `.env`:
+
+- **Kafka (Aiven) — SASL over TLS / SCRAM**
+  - `KAFKA_STATUS=1`
+  - `KAFKA_BROKER=<aiven-broker:port>`
+  - `KAFKA_SASL_MECHANISM=SCRAM-SHA-256` (use `SCRAM-SHA-512` if your Aiven project requires it)
+  - `KAFKA_SASL_USERNAME` / `KAFKA_SASL_PASSWORD`
+  - `KAFKA_SECURITY_PROTOCOL=SASL_SSL`
+  - `KAFKA_CA_PEM` — inline CA certificate PEM (preferred). Optionally `KAFKA_CA_LOCATION` to point at a mounted CA file instead.
+
+- **Redis (Upstash) — TLS**
+  - `REDIS_ADDRESS=<host>.upstash.io`, `REDIS_PORT=6379`, `REDIS_PASSWORD=<password>`
+  - `REDIS_TLS=true` (default on in prod; can be set to `false` to force plaintext Redis)
+
+- **RabbitMQ — off**
+  - `RABBITMQ_STATUS=0` (no connection attempt)
+  - To re-enable with AMQPS: set `RABBITMQ_STATUS=1`, `RABBIT_TLS=true`, and optionally `RABBIT_CA_PEM` / `RABBIT_CA_LOCATION` for private-CA brokers. Public-CA brokers work with no CA (system roots).
+
+All boolean flags (`REDIS_TLS`, `RABBIT_TLS`) accept `true`/`false`/`1`/`0`.
+The startup gate waits up to `STARTUP_DEPENDENCY_TIMEOUT` (default `60s`) for the enabled
+dependencies to become reachable before starting the HTTP servers.

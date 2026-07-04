@@ -1,0 +1,431 @@
+name: Booking System Workflow
+
+on:
+  push:
+    branches:
+      - "main"
+      - "fix/**"
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy to EC2"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.25"
+  IMAGE_NAME: bixoloo/booking-system
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    outputs:
+      pct: ${{ steps.cov.outputs.pct }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Run tests
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          set -o pipefail
+          "$(go env GOPATH)/bin/gotestsum" \
+            --format testname \
+            --jsonfile test-output.json \
+            --junitfile test-report.xml \
+            -- -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Build coverage report
+        if: always()
+        run: |
+          go tool cover -func=coverage.out > coverage-func.txt || true
+          go tool cover -html=coverage.out -o coverage.html || true
+
+      - name: Compute total coverage
+        id: cov
+        if: always()
+        run: |
+          PCT=$(go tool cover -func=coverage.out 2>/dev/null | awk '/^total:/ {print $3}')
+          if [ -z "$PCT" ]; then PCT="0.0%"; fi
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          echo "Total coverage: $PCT"
+
+      - name: Write test summary
+        if: always()
+        run: |
+          {
+            echo "## Test Results"
+            echo ""
+            echo "Total coverage: ${{ steps.cov.outputs.pct }}"
+            echo ""
+            echo "Per-package coverage:"
+            echo ""
+            echo '```'
+            cat coverage-func.txt 2>/dev/null || echo "no coverage data"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            coverage.html
+            coverage-func.txt
+            test-report.xml
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: test
+    if: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+          echo "All files are gofmt-formatted"
+
+      - name: Go vet
+        env:
+          CGO_ENABLED: "1"
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.12.2
+          install-mode: goinstall
+          args: --timeout=5m
+
+  performance:
+    name: Performance
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run benchmarks (placeholder)
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          if grep -rlq "^func Benchmark" --include="*_test.go" .; then
+            echo "Running benchmarks"
+            go test -run '^$' -bench=. -benchmem ./... | tee bench.txt
+          else
+            echo "No benchmarks yet - performance placeholder" | tee bench.txt
+          fi
+
+      - name: Write performance summary
+        if: always()
+        run: |
+          {
+            echo "## Performance"
+            echo ""
+            echo '```'
+            cat bench.txt 2>/dev/null || echo "no benchmark output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install librdkafka
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librdkafka-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: govulncheck (blocking)
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      - name: gosec (report only)
+        continue-on-error: true
+        uses: securego/gosec@v2.22.0
+        with:
+          args: "-no-fail -fmt sarif -out gosec.sarif ./..."
+
+      - name: Upload gosec SARIF
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-sarif
+          path: gosec.sarif
+
+      - name: Trivy filesystem scan (report only)
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          format: table
+
+  build-and-publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - security
+    permissions:
+      contents: read
+      actions: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Short SHA
+        id: vars
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine push
+        id: push
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to Docker Hub
+        if: steps.push.outputs.enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ steps.push.outputs.enabled }}
+          load: ${{ steps.push.outputs.enabled == 'false' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy image scan (report only)
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          format: table
+
+      - name: Write build summary
+        if: always()
+        run: |
+          {
+          echo "## Build and Publish"
+          echo ""
+          echo "Image: ${{ env.IMAGE_NAME }}"
+          echo "Tags: latest, ${{ steps.vars.outputs.sha }}"
+          echo "Pushed: ${{ steps.push.outputs.enabled }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-vm:
+    name: Deploy to EC2 || VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: |
+      (github.event_name == 'workflow_dispatch' )
+       && (github.ref == 'refs/heads/main')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if the deployment dir exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22}}
+          script: |
+            set -eou pipefail
+
+            DEPLOY_DIR=${{ secrets.DEPLOY_PATH }}
+
+            if [ -d "${DEPLOY_DIR}" ]; then
+              echo "Deploy directory exists: ${DEPLOY_DIR}"
+            else
+              echo "Deploy dir does not exists. Creating one ..."
+              mkdir -p "${DEPLOY_DIR}"
+            fi
+
+            echo "Directory ready: "
+            ls -la "${DEPLOY_DIR}"
+
+      - name: Copy deployment files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22}}
+          source: "docker-compose.yml,alloy/config.alloy"
+          target: ${{ secrets.DEPLOY_PATH }}
+          overwrite: true
+
+      - name: Deploy the app on EC2 || VM
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          GRAFANA_LOKI_URL: ${{ secrets.GRAFANA_LOKI_URL }}
+          GRAFANA_LOKI_USERNAME: ${{ secrets.GRAFANA_LOKI_USERNAME }}
+          GRAFANA_LOKI_PASSWORD: ${{ secrets.GRAFANA_LOKI_PASSWORD }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_SSH_PORT || 22 }}
+          envs: IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,ENV_FILE,GRAFANA_LOKI_URL,GRAFANA_LOKI_USERNAME,GRAFANA_LOKI_PASSWORD,DEPLOY_PATH
+          script: |
+            set -eou pipefail
+            cd "${DEPLOY_PATH}"
+            # scp nests the source path; move config.alloy up if needed
+            if [ -f alloy/config.alloy ]; then
+              cp alloy/config.alloy ./config.alloy;
+            fi
+            printf '%s' "$ENV_FILE" > .env
+            chmod 600 .env
+
+            {
+            echo "GRAFANA_LOKI_URL=$GRAFANA_LOKI_URL"
+            echo "GRAFANA_LOKI_USERNAME=$GRAFANA_LOKI_USERNAME"
+            echo "GRAFANA_LOKI_PASSWORD=$GRAFANA_LOKI_PASSWORD"
+            } > alloy.env
+
+            chmod 600 alloy.env
+
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+            export IMAGE_TAG="${IMAGE_TAG:-latest}"
+            echo "Deploying container ${IMAGE_TAG}....."
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            docker logout
+
+      - name: Write deploy summary
+        if: always()
+        run: |
+          {
+          echo "## Deploy to EC2 || VM"
+          echo ""
+          echo "Image tag: ${{ github.event.inputs.image_tag }}"
+          echo "Result: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [test, quality, security, performance]
+    if: always()
+    steps:
+      - name: Aggregate results
+        run: |
+          {
+          echo "## Pipeline Summary"
+          echo ""
+          echo "| Job | Status |"
+          echo "| --- | --- |"
+          echo "| Test | ${{ needs.test.result == 'success' && 'PASS' || (needs.test.result == 'skipped' && 'SKIPPED' || 'FAIL') }} |"
+          echo "| Code Quality | ${{ needs.quality.result == 'success' && 'PASS' || (needs.quality.result == 'skipped' && 'SKIPPED' || 'FAIL') }} |"
+          echo "| Security | ${{ needs.security.result == 'success' && 'PASS' || (needs.security.result == 'skipped' && 'SKIPPED' || 'FAIL') }} |"
+          echo "| Performance | ${{ needs.performance.result == 'success' && 'PASS' || (needs.performance.result == 'skipped' && 'SKIPPED' || 'FAIL') }} |"
+          echo ""
+          echo "Total coverage: ${{ needs.test.outputs.pct }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if any required job failed
+        if: needs.test.result == 'failure' || needs.quality.result == 'failure' || needs.security.result == 'failure'
+        run: |
+          echo "One or more required jobs failed"
+          exit 1

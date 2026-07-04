@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,7 +16,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func ProducerConnect(brokerString string) (*kafka.Producer, error) {
+func ProducerConnect(cfg entities.KakfaConfig) (*kafka.Producer, error) {
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -27,10 +28,9 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 
 	}()
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": brokerString,
-		"acks":              "all",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("acks", "all")
+	p, err := kafka.NewProducer(cm)
 
 	if err != nil {
 		LogError("PRODUCER: Could not connect to broker becasue: "+err.Error(), entities.ErrorLog)
@@ -42,7 +42,7 @@ func ProducerConnect(brokerString string) (*kafka.Producer, error) {
 	return p, nil
 }
 
-func ConsumerConnect(broker string) (*kafka.Consumer, error) {
+func ConsumerConnect(cfg entities.KakfaConfig) (*kafka.Consumer, error) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -53,11 +53,10 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 
 	}()
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": broker,
-		"group.id":          "kafka-go-getting-started",
-		"auto.offset.reset": "earliest",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("group.id", "kafka-go-getting-started")
+	_ = cm.SetKey("auto.offset.reset", "earliest")
+	c, err := kafka.NewConsumer(cm)
 
 	if err != nil {
 		LogError("CONSUMER: Could not connect due to "+err.Error(), entities.ErrorLog)
@@ -69,12 +68,11 @@ func ConsumerConnect(broker string) (*kafka.Consumer, error) {
 	return c, nil
 }
 
-func QPublishMessage(broker, topic, key string, data any) error {
+func QPublishMessage(cfg entities.KakfaConfig, topic, key string, data any) error {
 	wg := &sync.WaitGroup{}
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": broker,
-		"acks":              "all",
-	})
+	cm := KafkaConfigMap(cfg)
+	_ = cm.SetKey("acks", "all")
+	p, err := kafka.NewProducer(cm)
 
 	if err != nil {
 		LogError(err.Error(), entities.ErrorLog)
@@ -120,7 +118,7 @@ func QPublishMessage(broker, topic, key string, data any) error {
 
 var RabbitMQClient *entities.RabbitMQ
 
-func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
+func NewRabbitMQConnection(qURI string, tlsConfig *tls.Config) (*amqp.Connection, error) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
@@ -132,10 +130,15 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 	}()
 
 	// 1. Connect to rabbitmq
-	conn, err := amqp.Dial(qURI)
+	var conn *amqp.Connection
+	var err error
+	if tlsConfig != nil {
+		conn, err = amqp.DialTLS(qURI, tlsConfig)
+	} else {
+		conn, err = amqp.Dial(qURI)
+	}
 	if err != nil {
 		LogError("RABBITMQ: Failed to connect due to: %s", entities.ErrorLog, err)
-		log.Fatalf("RABBITMQ: Failed to connect due to: %s", err)
 		return nil, err
 	}
 
@@ -143,7 +146,6 @@ func NewRabbitMQConnection(qURI string) (*amqp.Connection, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		LogError("RABBITMQ: Failed to open a channel : %s", entities.ErrorLog, err)
-		log.Fatalf("RABBITMQ: Failed to open a channel : %s", err)
 		return nil, err
 	}
 
@@ -211,4 +213,49 @@ func PublishToMQ(queue string, data any) error {
 	LogInfo("RABBITMQ: Message sent queue %s", entities.InfoLog, body)
 
 	return nil
+}
+
+// KafkaConfigMap builds a librdkafka ConfigMap from an entity config.
+// Plaintext when cfg.SecurityProtocol is empty; SASL_SSL + SCRAM otherwise.
+func KafkaConfigMap(cfg entities.KakfaConfig) *kafka.ConfigMap {
+	cm := &kafka.ConfigMap{"bootstrap.servers": cfg.Broker}
+	if cfg.SecurityProtocol == "" {
+		return cm
+	}
+	_ = cm.SetKey("security.protocol", cfg.SecurityProtocol)
+	mech := cfg.SaslMechanism
+	if mech == "" {
+		mech = "SCRAM-SHA-256"
+	}
+	_ = cm.SetKey("sasl.mechanisms", mech)
+	_ = cm.SetKey("sasl.username", cfg.SaslUsername)
+	_ = cm.SetKey("sasl.password", cfg.SaslPassword)
+	if cfg.CaLocation != "" {
+		_ = cm.SetKey("ssl.ca.location", cfg.CaLocation)
+	} else if cfg.CaPem != "" {
+		_ = cm.SetKey("ssl.ca.pem", cfg.CaPem)
+	}
+	return cm
+}
+
+// RabbitTLSConfig returns nil when rb.TLS is false; otherwise a *tls.Config with
+// ServerName set and RootCAs populated from CaLocation (file) or CaPem (inline)
+// when provided. Empty CA => system roots (public-CA brokers).
+func RabbitTLSConfig(rb entities.RabbitMQConfig) *tls.Config {
+	if !rb.TLS {
+		return nil
+	}
+	cfg := &tls.Config{ServerName: rb.Host}
+	pool := x509.NewCertPool()
+	switch {
+	case rb.CaLocation != "":
+		if b, err := os.ReadFile(rb.CaLocation); err == nil && pool.AppendCertsFromPEM(b) {
+			cfg.RootCAs = pool
+		}
+	case rb.CaPem != "":
+		if pool.AppendCertsFromPEM([]byte(rb.CaPem)) {
+			cfg.RootCAs = pool
+		}
+	}
+	return cfg
 }

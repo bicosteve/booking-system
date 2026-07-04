@@ -277,18 +277,19 @@ func ValidateFilters(f entities.Filters) error {
 		return errors.New("page size must be between 1 and 20")
 	}
 
+	if f.Sort == "" {
+		return nil
+	}
+
 	sortSafeList := []string{"id", "cost", "created_at"}
 
 	for _, list := range sortSafeList {
 		if list == f.Sort {
 			return nil
-		} else {
-			return errors.New("provided sort parameter is not allowed")
 		}
-
 	}
 
-	return nil
+	return errors.New("provided sort parameter is not allowed")
 }
 
 func FilterRoomByID(rooms []*entities.Room, targetID string) (*entities.Room, bool) {
@@ -309,9 +310,12 @@ func FilterRoomByStatus(rooms []*entities.Room, status string) ([]*entities.Room
 	for _, room := range rooms {
 		if room.Status == status {
 			_rooms = append(_rooms, room)
-			return _rooms, true
 		}
 	}
 
-	return nil, false
+	if len(_rooms) == 0 {
+		return nil, false
+	}
+
+	return _rooms, true
 }

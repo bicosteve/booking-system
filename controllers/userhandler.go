@@ -2,18 +2,43 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/bicosteve/booking-system/entities"
+	"github.com/bicosteve/booking-system/pkg/health"
 	"github.com/bicosteve/booking-system/pkg/utils"
 	_ "github.com/swaggo/http-swagger/v2"
 )
 
 type APIResponse struct {
 	Msg string
+}
+
+// TestApp godoc
+// @Summary Check status of the app and its dependencies
+// @Description Reports whether MySQL, Redis, RabbitMQ, and Kafka are reachable
+// @ID check-health
+// @Tags health
+// @Produce json
+// @Success 200 {object} health.Report "All enabled dependencies reachable"
+// @Failure 503 {object} health.Report "One or more enabled dependencies down"
+// @Router /api/health/test [get]
+// @Security []
+func (b *Base) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	report := health.Check(r.Context(), b.healthCheckers())
+
+	status := http.StatusOK
+	if report.Status != "healthy" {
+		status = http.StatusServiceUnavailable
+	}
+
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(report)
 }
 
 // RegisterAccount godoc

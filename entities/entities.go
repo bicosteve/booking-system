@@ -108,25 +108,35 @@ type RedisConfig struct {
 	Password string `toml:"password"`
 	Port     string `toml:"port"`
 	Database int    `toml:"database"`
+	TLS      bool   `toml:"tls"`
 }
 
 type KakfaConfig struct {
-	Name   string   `toml:"name"`
-	Broker string   `toml:"broker"`
-	Topics []string `toml:"topics"`
-	Key    string   `toml:"key"`
-	On     int      `toml:"on"`
+	Name             string   `toml:"name"`
+	Broker           string   `toml:"broker"`
+	Topics           []string `toml:"topics"`
+	Key              string   `toml:"key"`
+	On               int      `toml:"on"`
+	SecurityProtocol string   `toml:"securityprotocol"` // "SASL_SSL" in prod; "" => plaintext
+	SaslMechanism    string   `toml:"saslmechanism"`    // default "SCRAM-SHA-256"
+	SaslUsername     string   `toml:"saslusername"`
+	SaslPassword     string   `toml:"saslpassword"`
+	CaPem            string   `toml:"capem"`      // inline CA PEM (ssl.ca.pem)
+	CaLocation       string   `toml:"calocation"` // optional file path; precedence
 }
 
 type RabbitMQConfig struct {
-	Name     string `toml:"name"`
-	Host     string `toml:"host"`
-	Password string `toml:"password"`
-	User     string `toml:"user"`
-	Queue    string `toml:"queue"`
-	On       int    `toml:"on"`
-	Port     string `toml:"port"`
-	Vhost    string `toml:"vhost"`
+	Name       string `toml:"name"`
+	Host       string `toml:"host"`
+	Password   string `toml:"password"`
+	User       string `toml:"user"`
+	Queue      string `toml:"queue"`
+	On         int    `toml:"on"`
+	Port       string `toml:"port"`
+	Vhost      string `toml:"vhost"`
+	TLS        bool   `toml:"tls"`
+	CaPem      string `toml:"capem"`
+	CaLocation string `toml:"calocation"`
 }
 
 type RabbitMQ struct {

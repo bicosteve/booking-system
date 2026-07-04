@@ -13,6 +13,7 @@ import (
 	"github.com/bicosteve/booking-system/connections"
 	"github.com/bicosteve/booking-system/entities"
 	"github.com/bicosteve/booking-system/pkg/app"
+	"github.com/bicosteve/booking-system/pkg/health"
 	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/bicosteve/booking-system/repo"
 	"github.com/bicosteve/booking-system/service"
@@ -53,9 +54,14 @@ type Base struct {
 	cancelURL      string
 	rabbitConn     *amqp.Connection
 	queueName      string
-	ctx            context.Context
-	KafkaStatus    int
-	RabbitMQStatus int
+	rabbitURL      string
+	rabbitCfg      entities.RabbitMQConfig
+	kafkaCfg       entities.KakfaConfig
+	// checkersProvider is overridden in tests; nil means use defaultLiveCheckers(). Used by HealthCheck.
+	checkersProvider func() []health.Checker
+	ctx              context.Context
+	KafkaStatus      int
+	RabbitMQStatus   int
 }
 
 func (b *Base) Init() {
@@ -66,20 +72,97 @@ func (b *Base) Init() {
 	var paymentTopic []string
 	var port int
 	var adminport int
-	var mqHost string
-	var mqPassword string
-	var mqPort string
-	var mqUser string
-	var mqVhost string
 	var config entities.Config
 
 	if os.Getenv("ENV") == "prod" {
-		conf, err := app.LoadConfigs("env.toml")
-		if err != nil {
-			os.Exit(1)
-		}
 
-		config = conf
+		kafkaStatus, _ := strconv.Atoi(os.Getenv("KAFKA_STATUS"))
+		rabbitMQStatus, _ := strconv.Atoi(os.Getenv("RABBITMQ_STATUS"))
+		dbPort, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+		redisDB, _ := strconv.Atoi(os.Getenv("REDIS_DB"))
+		userPort, _ := strconv.Atoi(os.Getenv("HTTP_PORT"))
+		adminPort, _ := strconv.Atoi(os.Getenv("ADMIN_PORT"))
+
+		config = entities.Config{
+			Logger: entities.LoggerConfig{Folder: os.Getenv("LOGGER_FOLDER")},
+			Kafka: []entities.KakfaConfig{
+				{
+					Broker:           os.Getenv("KAFKA_BROKER"),
+					Key:              os.Getenv("KAFKA_KEY"),
+					Topics:           []string{os.Getenv("KAFKA_TOPIC")},
+					On:               kafkaStatus,
+					SecurityProtocol: os.Getenv("KAFKA_SECURITY_PROTOCOL"),
+					SaslMechanism:    os.Getenv("KAFKA_SASL_MECHANISM"),
+					SaslUsername:     os.Getenv("KAFKA_SASL_USERNAME"),
+					SaslPassword:     os.Getenv("KAFKA_SASL_PASSWORD"),
+					CaPem:            os.Getenv("KAFKA_CA_PEM"),
+					CaLocation:       os.Getenv("KAFKA_CA_LOCATION"),
+				},
+			},
+			Rabbit: []entities.RabbitMQConfig{
+				{
+					Host:       os.Getenv("RABBITMQ_HOST"),
+					Port:       os.Getenv("RABBITMQ_PORT"),
+					User:       os.Getenv("RABBITMQ_USER"),
+					Password:   os.Getenv("RABBITMQ_PASSWORD"),
+					Vhost:      os.Getenv("RABBITMQ_VHOST"),
+					Queue:      os.Getenv("RABBITMQ_QUEUE"),
+					On:         rabbitMQStatus,
+					TLS:        envBool("RABBIT_TLS", false),
+					CaPem:      os.Getenv("RABBIT_CA_PEM"),
+					CaLocation: os.Getenv("RABBIT_CA_LOCATION"),
+				},
+			},
+			Mysql: []entities.MysqlConfig{
+				{
+					Username: os.Getenv("DB_USER"),
+					Password: os.Getenv("DB_PASSWORD"),
+					Host:     os.Getenv("DB_HOST"),
+					Port:     dbPort,
+					Schema:   os.Getenv("DB_SCHEMA"),
+				},
+			},
+			Redis: []entities.RedisConfig{
+				{
+					Name:     os.Getenv("REDIS_NAME"),
+					Address:  os.Getenv("REDIS_ADDRESS"),
+					Port:     os.Getenv("REDIS_PORT"),
+					Password: os.Getenv("REDIS_PASSWORD"),
+					Database: redisDB,
+					TLS:      envBool("REDIS_TLS", os.Getenv("ENV") == "prod"),
+				},
+			},
+			Http: []entities.HttpConfig{
+				{
+					Port:        userPort,
+					AdminPort:   adminPort,
+					ContentType: os.Getenv("CONTENT_TYPE"),
+					Path:        os.Getenv("API_PATH"),
+				},
+			},
+			Secrets: []entities.SecretConfig{
+				{
+					Name:           "secrets",
+					JWT:            os.Getenv("JWT_SECRET"),
+					Sendgrid:       os.Getenv("SENDGRID_KEY"),
+					MailFrom:       os.Getenv("MAIL_FROM"),
+					AfricasTalking: os.Getenv("AT_KEY"),
+					AppUsername:    os.Getenv("APP_USERNAME"),
+					PPClientID:     os.Getenv("PP_CLIENT_ID"),
+					PPSecret:       os.Getenv("PP_SECRET"),
+					StripeSecret:   os.Getenv("STRIPE_SECRET"),
+				},
+			},
+			Stripe: []entities.StripeConfig{
+				{
+					Name:         os.Getenv("STRIPE_NAME"),
+					StripeSecret: os.Getenv("STRIPE_SECRET"),
+					PubKey:       os.Getenv("STRIPE_PUB_KEY"),
+					SuccessURL:   os.Getenv("STRIPE_SUCCESS_URL"),
+					CancelURL:    os.Getenv("STRIPE_CANCEL_URL"),
+				},
+			},
+		}
 
 	} else {
 
@@ -98,22 +181,27 @@ func (b *Base) Init() {
 		os.Exit(1)
 	}
 
+	// Wait for backing services to be reachable before connecting, so the app
+	// doesn't exit when docker-compose services come up at different times.
+	b.waitForDependencies(config)
+
 	for _, kafka := range config.Kafka {
 		brokerURL = kafka.Broker
 		paymentKey = kafka.Key
 		paymentTopic = kafka.Topics
 		b.KafkaStatus = kafka.On
+		b.kafkaCfg = kafka
 
 	}
 
 	if b.KafkaStatus == 1 {
-		p, err := utils.ProducerConnect(brokerURL)
+		p, err := utils.ProducerConnect(b.kafkaCfg)
 		if err != nil {
 			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
-		c, err := utils.ConsumerConnect(brokerURL)
+		c, err := utils.ConsumerConnect(b.kafkaCfg)
 		if err != nil {
 			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
@@ -127,33 +215,24 @@ func (b *Base) Init() {
 	}
 
 	for _, rabbitConf := range config.Rabbit {
-		mqHost = rabbitConf.Host
-		mqPassword = rabbitConf.Password
-		mqPort = rabbitConf.Port
-		mqVhost = rabbitConf.Vhost
 		b.queueName = rabbitConf.Queue
-		mqUser = rabbitConf.User
 		b.RabbitMQStatus = rabbitConf.On
+		b.rabbitCfg = rabbitConf
 
 	}
 
-	if b.RabbitMQStatus == 1 && os.Getenv("ENV") == "prod" {
-		url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", mqUser, mqPassword, mqHost, mqPort, mqVhost)
-		conn, err := utils.NewRabbitMQConnection(url)
+	if b.RabbitMQStatus == 1 {
+		url := rabbitURL(b.rabbitCfg)
+		b.rabbitURL = url
+		conn, err := utils.NewRabbitMQConnection(url, utils.RabbitTLSConfig(b.rabbitCfg))
 		if err != nil {
-			os.Exit(1)
-		}
-
-		b.rabbitConn = conn
-	} else {
-		url := fmt.Sprintf("amqp://%s:%s@%s:%s", mqUser, mqPassword, mqHost, mqPort)
-		conn, err := utils.NewRabbitMQConnection(url)
-		if err != nil {
+			utils.LogError(err.Error(), entities.ErrorLog)
 			os.Exit(1)
 		}
 
 		b.rabbitConn = conn
 	}
+	// else: RabbitMQ disabled — no dial, no exit.
 
 	for _, sql := range config.Mysql {
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=latin1&parseTime=True&loc=Local", sql.Username, sql.Password, sql.Host, sql.Port, sql.Schema)
@@ -202,6 +281,10 @@ func (b *Base) Init() {
 
 	b.AuthPort = strconv.Itoa(port)
 	b.AdminPort = strconv.Itoa(adminport)
+
+	// Store the base context so background workers (e.g. the RabbitMQ consumer)
+	// have a non-nil context to pass down to the service/repo layers.
+	b.ctx = ctx
 
 	// Initializing user repo
 	userRepository := repo.NewDBRepository(b.DB, b.Redis)
@@ -267,8 +350,15 @@ func (b *Base) userRouter() http.Handler {
 	r.Use(middleware.Recoverer)
 	utils.SetCors(r)
 
+	swaggerURL := ""
+	if os.Getenv("ENV") == "prod" {
+		swaggerURL = "swagger/doc.json"
+	} else {
+		swaggerURL = "http://localhost:7001/swagger/doc.json"
+	}
+
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:7001/swagger/doc.json"),
+		httpSwagger.URL(swaggerURL),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 	))
@@ -277,6 +367,7 @@ func (b *Base) userRouter() http.Handler {
 	r.Post(b.path+"/user/register", b.RegisterHandler)
 	r.Post(b.path+"/user/login", b.LoginHandler)
 	r.Get(b.path+"/user/rooms", b.FindRoomHandler)
+	r.Get(b.path+"/health/test", b.HealthCheck)
 
 	// Private routes
 	r.Route(b.path, func(r chi.Router) {
@@ -300,9 +391,15 @@ func (b *Base) adminRouter() http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	utils.SetCors(router)
+	swaggerURL := ""
+	if os.Getenv("ENV") == "prod" {
+		swaggerURL = "swagger/doc.json"
+	} else {
+		swaggerURL = "http://localhost:7001/swagger/doc.json"
+	}
 
 	router.Mount("/swagger", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:7002/swagger/doc.json"),
+		httpSwagger.URL(swaggerURL),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 	))

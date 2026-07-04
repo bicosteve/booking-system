@@ -5,4 +5,4 @@ env.toml
 ./pkg/stripe/example.go
 ./pkg/payments/example.go
 /bin/
-redis.go
+DS_Store

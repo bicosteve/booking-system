@@ -1,0 +1,52 @@
+// Grafana Alloy config: discover the booking-system container via the Docker
+// socket, read its logs, and forward them to Grafana Loki.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "booking" {
+  targets = discovery.docker.containers.targets
+
+  // Keep only the booking-system container.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?booking-system"
+    action        = "keep"
+  }
+
+  // Expose the container name as a label.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?(.*)"
+    target_label  = "container"
+  }
+
+  // Static service + environment labels.
+  rule {
+    target_label = "service"
+    replacement  = "booking-system"
+  }
+
+  rule {
+    target_label = "env"
+    replacement  = "prod"
+  }
+}
+
+loki.source.docker "booking" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.booking.output
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("GRAFANA_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_LOKI_USERNAME")
+      password = sys.env("GRAFANA_LOKI_PASSWORD")
+    }
+  }
+}
