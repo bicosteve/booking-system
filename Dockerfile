@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage ----
-FROM golang:1.23-bookworm AS builder
+FROM golang:1.25-bookworm AS builder
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends librdkafka-dev pkg-config \
@@ -20,12 +20,10 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o /out/bookingapp ./cmd
 FROM debian:bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends librdkafka1 ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends librdkafka1 ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-RUN apk add --no-cache curl
 
 COPY --from=builder /out/bookingapp /app/bookingapp
 COPY --from=builder /src/docs /app/docs
