@@ -183,7 +183,7 @@ jobs:
   security:
     name: Security
     runs-on: ubuntu-latest
-    needs: test
+    needs: quality
     permissions:
       contents: read
       security-events: write
