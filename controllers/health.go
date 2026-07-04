@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/bicosteve/booking-system/pkg/health"
+	"github.com/bicosteve/booking-system/pkg/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -34,7 +35,7 @@ func (b *Base) defaultLiveCheckers() []health.Checker {
 	})
 
 	if b.RabbitMQStatus == 1 {
-		cs = append(cs, health.RabbitProbe(b.rabbitURL))
+		cs = append(cs, health.RabbitProbe(b.rabbitURL, utils.RabbitTLSConfig(b.rabbitCfg)))
 	} else {
 		cs = append(cs, health.Checker{Name: "rabbitmq", Disabled: true})
 	}

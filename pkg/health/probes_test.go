@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,11 +28,12 @@ func TestRedisProbe_BadAddress(t *testing.T) {
 }
 
 func TestRabbitProbe_BadAddress(t *testing.T) {
-	probeDown(t, RabbitProbe("amqp://guest:guest@127.0.0.1:1/"))
-	assert.Equal(t, "rabbitmq", RabbitProbe("").Name)
+	probeDown(t, RabbitProbe("amqp://guest:guest@127.0.0.1:1/", nil))
+	assert.Equal(t, "rabbitmq", RabbitProbe("", nil).Name)
 }
 
 func TestKafkaProbe_BadAddress(t *testing.T) {
-	probeDown(t, KafkaProbe("127.0.0.1:1"))
-	assert.Equal(t, "kafka", KafkaProbe("").Name)
+	cm := &kafka.ConfigMap{"bootstrap.servers": "127.0.0.1:1"}
+	probeDown(t, KafkaProbe(cm))
+	assert.Equal(t, "kafka", KafkaProbe(&kafka.ConfigMap{}).Name)
 }

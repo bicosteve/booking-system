@@ -55,6 +55,8 @@ type Base struct {
 	rabbitConn     *amqp.Connection
 	queueName      string
 	rabbitURL      string
+	rabbitCfg      entities.RabbitMQConfig
+	kafkaCfg       entities.KakfaConfig
 	// checkersProvider is overridden in tests; nil means use defaultLiveCheckers(). Used by HealthCheck.
 	checkersProvider func() []health.Checker
 	ctx              context.Context
@@ -98,12 +100,12 @@ func (b *Base) Init() {
 			},
 			Rabbit: []entities.RabbitMQConfig{
 				{
-					Host:     os.Getenv("RABBIT_HOST"),
-					Port:     os.Getenv("RABBIT_PORT"),
-					User:     os.Getenv("RABBIT_USER"),
-					Password: os.Getenv("RABBIT_PASSWORD"),
-					Vhost:    os.Getenv("RABBIT_VHOST"),
-					Queue:    os.Getenv("RABBIT_QUEUE"),
+					Host:     os.Getenv("RABBITMQ_HOST"),
+					Port:     os.Getenv("RABBITMQ_PORT"),
+					User:     os.Getenv("RABBITMQ_USER"),
+					Password: os.Getenv("RABBITMQ_PASSWORD"),
+					Vhost:    os.Getenv("RABBITMQ_VHOST"),
+					Queue:    os.Getenv("RABBITMQ_QUEUE"),
 					On:       rabbitMQStatus,
 				},
 			},

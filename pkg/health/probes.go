@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"time"
 
@@ -39,14 +40,21 @@ func RedisProbe(addr string) Checker {
 }
 
 // RabbitProbe dials the provided amqp URL once and closes the connection.
-// Honors ctx cancellation so it never blocks longer than the caller's deadline.
-func RabbitProbe(url string) Checker {
+// When tlsConfig != nil it uses amqp.DialTLS, else amqp.Dial. Honors ctx
+// cancellation so it never blocks longer than the caller's deadline.
+func RabbitProbe(url string, tlsConfig *tls.Config) Checker {
 	return Checker{
 		Name: "rabbitmq",
 		Ping: func(ctx context.Context) error {
 			done := make(chan error, 1)
 			go func() {
-				conn, err := amqp.Dial(url)
+				var conn *amqp.Connection
+				var err error
+				if tlsConfig != nil {
+					conn, err = amqp.DialTLS(url, tlsConfig)
+				} else {
+					conn, err = amqp.Dial(url)
+				}
 				if err != nil {
 					done <- err
 					return
@@ -63,13 +71,13 @@ func RabbitProbe(url string) Checker {
 	}
 }
 
-// KafkaProbe uses an ephemeral AdminClient to fetch cluster metadata, a real
-// broker round-trip. The metadata timeout is capped by ctx's deadline.
-func KafkaProbe(broker string) Checker {
+// KafkaProbe uses an ephemeral AdminClient built from cm to fetch cluster metadata,
+// a real broker round-trip. The metadata timeout is capped by ctx's deadline.
+func KafkaProbe(cm *kafka.ConfigMap) Checker {
 	return Checker{
 		Name: "kafka",
 		Ping: func(ctx context.Context) error {
-			ac, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": broker})
+			ac, err := kafka.NewAdminClient(cm)
 			if err != nil {
 				return err
 			}

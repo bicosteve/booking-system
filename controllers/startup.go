@@ -51,23 +51,39 @@ func buildStartupProbes(cfg entities.Config, b *Base) []health.Checker {
 	}
 	for _, k := range cfg.Kafka {
 		if k.On == 1 {
-			cs = append(cs, health.KafkaProbe(k.Broker))
+			cs = append(cs, health.KafkaProbe(utils.KafkaConfigMap(k)))
 		}
 	}
 	for _, rb := range cfg.Rabbit {
 		if rb.On == 1 {
 			url := rabbitURL(rb)
 			b.rabbitURL = url
-			cs = append(cs, health.RabbitProbe(url))
+			cs = append(cs, health.RabbitProbe(url, utils.RabbitTLSConfig(rb)))
 		}
 	}
 	return cs
 }
 
-// rabbitURL builds the amqp URL. In prod the vhost is included; elsewhere it is omitted.
-func rabbitURL(rb entities.RabbitMQConfig) string {
-	if os.Getenv("ENV") == "prod" {
-		return fmt.Sprintf("amqp://%s:%s@%s:%s/%s", rb.User, rb.Password, rb.Host, rb.Port, rb.Vhost)
+// envBool reads a boolean env var; returns def when unset/unrecognized.
+func envBool(name string, def bool) bool {
+	switch os.Getenv(name) {
+	case "true", "1":
+		return true
+	case "false", "0":
+		return false
+	default:
+		return def
 	}
-	return fmt.Sprintf("amqp://%s:%s@%s:%s", rb.User, rb.Password, rb.Host, rb.Port)
+}
+
+// rabbitURL builds the amqp(s) URL. In prod the vhost is included; elsewhere it is omitted.
+func rabbitURL(rb entities.RabbitMQConfig) string {
+	scheme := "amqp"
+	if rb.TLS {
+		scheme = "amqps"
+	}
+	if os.Getenv("ENV") == "prod" {
+		return fmt.Sprintf("%s://%s:%s@%s:%s/%s", scheme, rb.User, rb.Password, rb.Host, rb.Port, rb.Vhost)
+	}
+	return fmt.Sprintf("%s://%s:%s@%s:%s", scheme, rb.User, rb.Password, rb.Host, rb.Port)
 }
